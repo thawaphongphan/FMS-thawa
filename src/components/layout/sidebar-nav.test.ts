@@ -24,5 +24,5 @@ describe("sidebar-nav", () => {
     expect(getActiveNavChain("/settings").map((c) => c.href)).toEqual(["/settings"]);
     expect(getActiveNavChain("/nowhere")).toEqual([]);
   });
-  it("โครงเมนูมี 3 กลุ่ม", () => expect(sidebarGroups).toHaveLength(3));
+  it("โครงสร้างกลุ่มเมนูหลัก", () => expect(sidebarGroups).toHaveLength(10));
 });

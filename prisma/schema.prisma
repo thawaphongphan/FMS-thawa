@@ -36,6 +36,17 @@ model Tenant {
   roles       Role[]
   auditLogs   AuditLog[]
   sampleItems SampleItem[]
+  articleCategories ArticleCategory[]
+  articles          Article[]
+  departments       Department[]
+  staffProfiles     StaffProfile[]
+  curricula         Curriculum[]
+  courses           Course[]
+  academicTerms     AcademicTerm[]
+  classSchedules    ClassSchedule[]
+  examSchedules     ExamSchedule[]
+  studentProfiles   StudentProfile[]
+  alumniProfiles    AlumniProfile[]
 
   @@map("tenants")
 }
@@ -63,6 +74,8 @@ model User {
   userTenants UserTenant[]
   authTokens  AuthToken[]
   auditLogs   AuditLog[]   @relation("AuditActor")
+  authoredArticles Article[] @relation("AuthorArticles")
+  staffProfile     StaffProfile?
 
   @@map("users")
 }
@@ -210,3 +223,433 @@ model SampleItem {
   @@index([tenantId])
   @@map("sample_items")
 }
+
+// -------------------------------------------------------------
+// ระบบข่าวสารและประชาสัมพันธ์ (News & Announcements)
+// -------------------------------------------------------------
+
+enum ArticleStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model ArticleCategory {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  code       String   @db.VarChar(50)
+  nameTh     String   @map("name_th") @db.VarChar(100)
+  nameEn     String   @map("name_en") @db.VarChar(100)
+  orderIndex Int      @default(0) @map("order_index")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  articles Article[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("article_categories")
+}
+
+model Article {
+  id            String         @id @default(uuid()) @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  categoryId    String         @map("category_id") @db.Uuid
+  authorId      String?        @map("author_id") @db.Uuid
+  slug          String         @db.VarChar(255)
+  titleTh       String         @map("title_th") @db.VarChar(255)
+  titleEn       String         @map("title_en") @db.VarChar(255)
+  summaryTh     String?        @map("summary_th") @db.Text
+  summaryEn     String?        @map("summary_en") @db.Text
+  contentTh     String         @map("content_th") @db.Text
+  contentEn     String         @map("content_en") @db.Text
+  coverImageUrl String?        @map("cover_image_url") @db.VarChar(500)
+  status        ArticleStatus  @default(DRAFT)
+  pinned        Boolean        @default(false)
+  viewCount     Int            @default(0) @map("view_count")
+  publishedAt   DateTime?      @map("published_at") @db.Timestamptz()
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category    ArticleCategory     @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  author      User?               @relation("AuthorArticles", fields: [authorId], references: [id], onDelete: SetNull)
+  attachments ArticleAttachment[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, status, publishedAt])
+  @@index([tenantId, pinned])
+  @@map("articles")
+}
+
+model ArticleAttachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  articleId String   @map("article_id") @db.Uuid
+  fileName  String   @map("file_name") @db.VarChar(255)
+  fileUrl   String   @map("file_url") @db.VarChar(500)
+  fileSize  Int      @map("file_size")
+  fileType  String   @map("file_type") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([articleId])
+  @@map("article_attachments")
+}
+
+// -------------------------------------------------------------
+// ระบบบุคลากรและคณาจารย์ (Staff & Faculty Directory)
+// -------------------------------------------------------------
+
+enum StaffStatus {
+  ACTIVE
+  ON_LEAVE
+  RETIRED
+}
+
+model Department {
+  id         String         @id @default(uuid()) @db.Uuid
+  tenantId   String         @map("tenant_id") @db.Uuid
+  code       String         @db.VarChar(50)
+  nameTh     String         @map("name_th") @db.VarChar(150)
+  nameEn     String         @map("name_en") @db.VarChar(150)
+  orderIndex Int            @default(0) @map("order_index")
+  createdAt  DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staffProfiles StaffProfile[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("departments")
+}
+
+model StaffProfile {
+  id                String      @id @default(uuid()) @db.Uuid
+  tenantId          String      @map("tenant_id") @db.Uuid
+  userId            String?     @unique @map("user_id") @db.Uuid
+  departmentId      String      @map("department_id") @db.Uuid
+  academicTitleTh   String      @map("academic_title_th") @db.VarChar(50)
+  academicTitleEn   String      @map("academic_title_en") @db.VarChar(50)
+  firstNameTh       String      @map("first_name_th") @db.VarChar(100)
+  lastNameTh        String      @map("last_name_th") @db.VarChar(100)
+  firstNameEn       String      @map("first_name_en") @db.VarChar(100)
+  lastNameEn        String      @map("last_name_en") @db.VarChar(100)
+  email             String      @db.VarChar(255)
+  phoneNumber       String?     @map("phone_number") @db.VarChar(50)
+  officeRoom        String?     @map("office_room") @db.VarChar(100)
+  avatarUrl         String?     @map("avatar_url") @db.VarChar(500)
+  adminPositionTh   String?     @map("admin_position_th") @db.VarChar(150)
+  adminPositionEn   String?     @map("admin_position_en") @db.VarChar(150)
+  bioTh             String?     @map("bio_th") @db.Text
+  bioEn             String?     @map("bio_en") @db.Text
+  researchInterests String[]    @default([]) @map("research_interests")
+  educationHistory  Json        @default("[]") @map("education_history") @db.JsonB
+  orderIndex        Int         @default(0) @map("order_index")
+  status            StaffStatus @default(ACTIVE)
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user              User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  department        Department      @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  teachingSchedules ClassSchedule[]
+  examInvigilations ExamSchedule[]
+
+  @@index([tenantId, status])
+  @@index([departmentId])
+  @@map("staff_profiles")
+}
+
+// -------------------------------------------------------------
+// ระบบหลักสูตรการศึกษา (Curriculum & Academic Programs)
+// -------------------------------------------------------------
+
+enum DegreeLevel {
+  BACHELOR
+  MASTER
+  DOCTORATE
+  CERTIFICATE
+  TRAINING
+}
+
+model Curriculum {
+  id            String             @id @default(uuid()) @db.Uuid
+  tenantId      String             @map("tenant_id") @db.Uuid
+  degreeLevel   DegreeLevel        @default(BACHELOR) @map("degree_level")
+  programCode   String             @map("program_code") @db.VarChar(50)
+  nameTh        String             @map("name_th") @db.VarChar(255)
+  nameEn        String             @map("name_en") @db.VarChar(255)
+  degreeTitleTh String             @map("degree_title_th") @db.VarChar(255)
+  degreeTitleEn String             @map("degree_title_en") @db.VarChar(255)
+  totalCredits  Int                @map("total_credits")
+  durationYears Int                @default(4) @map("duration_years")
+  revisedYear   Int                @map("revised_year")
+  brochureUrl   String?            @map("brochure_url") @db.VarChar(500)
+  isActive      Boolean            @default(true) @map("is_active")
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  courses        CurriculumCourse[]
+  classSchedules ClassSchedule[]
+  studentProfiles StudentProfile[]
+  alumniProfiles  AlumniProfile[]
+
+  @@unique([tenantId, programCode, revisedYear])
+  @@index([tenantId, degreeLevel])
+  @@map("curricula")
+}
+
+model Course {
+  id            String             @id @default(uuid()) @db.Uuid
+  tenantId      String             @map("tenant_id") @db.Uuid
+  courseCode    String             @map("course_code") @db.VarChar(50)
+  nameTh        String             @map("name_th") @db.VarChar(255)
+  nameEn        String             @map("name_en") @db.VarChar(255)
+  credits       String             @db.VarChar(20)
+  descriptionTh String?            @map("description_th") @db.Text
+  descriptionEn String?            @map("description_en") @db.Text
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  curricula      CurriculumCourse[]
+  classSchedules ClassSchedule[]
+  examSchedules  ExamSchedule[]
+
+  @@unique([tenantId, courseCode])
+  @@index([tenantId])
+  @@map("courses")
+}
+
+model CurriculumCourse {
+  id              String     @id @default(uuid()) @db.Uuid
+  curriculumId    String     @map("curriculum_id") @db.Uuid
+  courseId        String     @map("course_id") @db.Uuid
+  courseCategory  String     @map("course_category") @db.VarChar(100)
+  recommendedYear Int        @map("recommended_year")
+  recommendedTerm Int        @map("recommended_term")
+
+  curriculum Curriculum @relation(fields: [curriculumId], references: [id], onDelete: Cascade)
+  course     Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([curriculumId, courseId])
+  @@map("curriculum_courses")
+}
+
+// -------------------------------------------------------------
+// ระบบตารางสอน ตารางสอบ ตารางเรียน (Timetable & Exam Schedules)
+// -------------------------------------------------------------
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ExamType {
+  MIDTERM
+  FINAL
+}
+
+model AcademicTerm {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @map("tenant_id") @db.Uuid
+  year      Int       @map("year")
+  term      Int       @map("term")
+  nameTh    String    @map("name_th") @db.VarChar(100)
+  nameEn    String    @map("name_en") @db.VarChar(100)
+  startDate DateTime? @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  isCurrent Boolean   @default(false) @map("is_current")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classSchedules ClassSchedule[]
+  examSchedules  ExamSchedule[]
+
+  @@unique([tenantId, year, term])
+  @@index([tenantId, isCurrent])
+  @@map("academic_terms")
+}
+
+model ClassSchedule {
+  id             String      @id @default(uuid()) @db.Uuid
+  tenantId       String      @map("tenant_id") @db.Uuid
+  termId         String      @map("term_id") @db.Uuid
+  courseId       String      @map("course_id") @db.Uuid
+  section        String      @db.VarChar(50)
+  dayOfWeek      DayOfWeek   @map("day_of_week")
+  startTime      String      @map("start_time") @db.VarChar(10)
+  endTime        String      @map("end_time") @db.VarChar(10)
+  room           String      @db.VarChar(100)
+  building       String?     @db.VarChar(100)
+  instructorId   String?     @map("instructor_id") @db.Uuid
+  instructorName String?     @map("instructor_name") @db.VarChar(255)
+  curriculumId   String?     @map("curriculum_id") @db.Uuid
+  targetYear     Int?        @map("target_year")
+  notes          String?     @db.Text
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant     Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  term       AcademicTerm  @relation(fields: [termId], references: [id], onDelete: Cascade)
+  course     Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  instructor StaffProfile? @relation(fields: [instructorId], references: [id], onDelete: SetNull)
+  curriculum Curriculum?   @relation(fields: [curriculumId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, termId])
+  @@index([courseId])
+  @@index([instructorId])
+  @@index([curriculumId])
+  @@map("class_schedules")
+}
+
+model ExamSchedule {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @map("tenant_id") @db.Uuid
+  termId          String       @map("term_id") @db.Uuid
+  courseId        String       @map("course_id") @db.Uuid
+  section         String       @default("ทุกกลุ่ม") @db.VarChar(50)
+  examType        ExamType     @map("exam_type")
+  examDate        DateTime     @map("exam_date") @db.Date
+  startTime       String       @map("start_time") @db.VarChar(10)
+  endTime         String       @map("end_time") @db.VarChar(10)
+  room            String       @db.VarChar(100)
+  seatRange       String?      @map("seat_range") @db.VarChar(100)
+  invigilatorId   String?      @map("invigilator_id") @db.Uuid
+  invigilatorName String?      @map("invigilator_name") @db.VarChar(255)
+  notes           String?      @db.Text
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  term         AcademicTerm  @relation(fields: [termId], references: [id], onDelete: Cascade)
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  invigilator  StaffProfile? @relation(fields: [invigilatorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, termId, examType])
+  @@index([courseId])
+  @@index([invigilatorId])
+  @@map("exam_schedules")
+}
+
+// -------------------------------------------------------------
+// ระบบข้อมูลนิสิต และนิสิตเก่า (Student & Alumni System)
+// -------------------------------------------------------------
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StudentStatus {
+  ENROLLED
+  ON_LEAVE
+  GRADUATED
+  DISMISSED
+}
+
+enum EmploymentStatus {
+  EMPLOYED
+  STUDYING
+  ENTREPRENEUR
+  JOB_SEEKING
+  OTHER
+}
+
+model StudentProfile {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @map("tenant_id") @db.Uuid
+  studentId      String        @map("student_id") @db.VarChar(50)
+  titleTh        String        @map("title_th") @db.VarChar(50)
+  titleEn        String        @map("title_en") @db.VarChar(50)
+  firstNameTh    String        @map("first_name_th") @db.VarChar(100)
+  lastNameTh     String        @map("last_name_th") @db.VarChar(100)
+  firstNameEn    String        @map("first_name_en") @db.VarChar(100)
+  lastNameEn     String        @map("last_name_en") @db.VarChar(100)
+  gender         Gender        @default(MALE)
+  nationality    String        @default("ไทย") @db.VarChar(100)
+  ethnicity      String        @default("ไทย") @db.VarChar(100)
+  religion       String?       @db.VarChar(100)
+  domicileRegion String?       @map("domicile_region") @db.VarChar(100)
+  curriculumId   String        @map("curriculum_id") @db.Uuid
+  degreeLevel    DegreeLevel   @default(BACHELOR) @map("degree_level")
+  admissionYear  Int           @map("admission_year")
+  currentYear    Int           @default(1) @map("current_year")
+  status         StudentStatus @default(ENROLLED)
+  email          String?       @db.VarChar(255)
+  phoneNumber    String?       @map("phone_number") @db.VarChar(50)
+  avatarUrl      String?       @map("avatar_url") @db.VarChar(500)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  curriculum     Curriculum     @relation(fields: [curriculumId], references: [id], onDelete: Restrict)
+  alumniProfile  AlumniProfile?
+
+  @@unique([tenantId, studentId])
+  @@index([tenantId, status])
+  @@index([tenantId, gender])
+  @@index([tenantId, nationality])
+  @@index([tenantId, admissionYear])
+  @@index([curriculumId])
+  @@map("student_profiles")
+}
+
+model AlumniProfile {
+  id               String           @id @default(uuid()) @db.Uuid
+  tenantId         String           @map("tenant_id") @db.Uuid
+  studentProfileId String?          @unique @map("student_profile_id") @db.Uuid
+  studentId        String           @map("student_id") @db.VarChar(50)
+  titleTh          String           @map("title_th") @db.VarChar(50)
+  titleEn          String           @map("title_en") @db.VarChar(50)
+  firstNameTh      String           @map("first_name_th") @db.VarChar(100)
+  lastNameTh       String           @map("last_name_th") @db.VarChar(100)
+  firstNameEn      String           @map("first_name_en") @db.VarChar(100)
+  lastNameEn       String           @map("last_name_en") @db.VarChar(100)
+  gender           Gender           @default(MALE)
+  curriculumId     String           @map("curriculum_id") @db.Uuid
+  degreeLevel      DegreeLevel      @default(BACHELOR) @map("degree_level")
+  graduationYear   Int              @map("graduation_year")
+  generation       Int?             @map("generation")
+  gpa              Float?
+  employmentStatus EmploymentStatus @default(EMPLOYED) @map("employment_status")
+  jobTitle         String?          @map("job_title") @db.VarChar(255)
+  company          String?          @db.VarChar(255)
+  industry         String?          @db.VarChar(150)
+  salaryRange      String?          @map("salary_range") @db.VarChar(100)
+  email            String?          @db.VarChar(255)
+  phoneNumber      String?          @map("phone_number") @db.VarChar(50)
+  linkedinUrl      String?          @map("linkedin_url") @db.VarChar(500)
+  avatarUrl        String?          @map("avatar_url") @db.VarChar(500)
+  isFeatured       Boolean          @default(false) @map("is_featured")
+  featuredStoryTh  String?          @map("featured_story_th") @db.Text
+  featuredStoryEn  String?          @map("featured_story_en") @db.Text
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant           Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  curriculum       Curriculum      @relation(fields: [curriculumId], references: [id], onDelete: Restrict)
+  studentProfile   StudentProfile? @relation(fields: [studentProfileId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, studentId])
+  @@index([tenantId, graduationYear])
+  @@index([tenantId, employmentStatus])
+  @@index([tenantId, isFeatured])
+  @@index([curriculumId])
+  @@map("alumni_profiles")
+}
+
+
+

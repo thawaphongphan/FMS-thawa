@@ -1,6 +1,12 @@
-import { LayoutDashboard, Users, Settings, Layers, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Layers, Newspaper, GraduationCap, BookOpen, CalendarDays, BarChart3, UserCheck, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
+import { NEWS_P } from "@/features/news";
+import { STAFF_P } from "@/features/staff";
+import { CURRICULUM_P } from "@/features/curriculum";
+import { SCHEDULE_P } from "@/features/schedule";
+import { STUDENTS_P } from "@/features/student-stats";
+import { ALUMNI_P } from "@/features/alumni";
 
 export interface NavItem {
   /** i18n key */
@@ -16,6 +22,30 @@ export interface NavCrumb { title: string; href: string }
 
 export const sidebarGroups: NavGroup[] = [
   { label: "nav.group.overview", items: [{ title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }] },
+  {
+    label: "curriculum.nav",
+    items: [{ title: "curriculum.adminTitle", href: "/admin/curriculum", icon: BookOpen, permission: CURRICULUM_P.curriculumRead }],
+  },
+  {
+    label: "schedule.nav",
+    items: [{ title: "schedule.adminTitle", href: "/admin/schedule", icon: CalendarDays, permission: SCHEDULE_P.scheduleRead }],
+  },
+  {
+    label: "stats.nav",
+    items: [{ title: "students.adminTitle", href: "/admin/students", icon: BarChart3, permission: STUDENTS_P.studentsRead }],
+  },
+  {
+    label: "alumni.nav",
+    items: [{ title: "alumni.adminTitle", href: "/admin/alumni", icon: UserCheck, permission: ALUMNI_P.alumniRead }],
+  },
+  {
+    label: "news.nav",
+    items: [{ title: "news.adminTitle", href: "/admin/news", icon: Newspaper, permission: NEWS_P.newsRead }],
+  },
+  {
+    label: "staff.nav",
+    items: [{ title: "staff.adminTitle", href: "/admin/staff", icon: GraduationCap, permission: STAFF_P.staffRead }],
+  },
   {
     label: "nav.group.sample",
     items: [{ title: "sample.nav", href: "/sample", icon: Layers, permission: SAMPLE_P.sampleRead }],
