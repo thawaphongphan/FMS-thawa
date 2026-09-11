@@ -23,6 +23,11 @@ async function main() {
     { email: "viewer@app.local", name: "ผู้ดู", roles: ["VIEWER"] },
     { email: "lockme@app.local", name: "บัญชีทดสอบล็อก", roles: ["VIEWER"] },
     { email: "forced@app.local", name: "บัญชีบังคับเปลี่ยนรหัส", roles: ["VIEWER"], mustChangePassword: true },
+    { email: "thawaphongphan@gmail.com", name: "Admin", roles: ["SUPER_ADMIN"] },
+    { email: "thawaphongphan1@osc.ac.th", name: "พระอาจารย์เทวพงศ์พันธ์ ถนอมจิตร", roles: ["VIEWER"] },
+    { email: "thawaphongphan@mcu.ac.th", name: "พระเทวพงศ์พันธ์ ถนอมจิตร", roles: ["VIEWER"] },
+    { email: "user@gmail.com", name: "Google User", roles: ["VIEWER"] },
+    { email: "user@line.me", name: "LINE User", roles: ["VIEWER"] },
   ];
   for (const u of users) {
     await seedUser(prisma, core.tenantId, { ...u, passwordHash: hash, roleIds: u.roles.map((c) => core.roleIds[c]) });
