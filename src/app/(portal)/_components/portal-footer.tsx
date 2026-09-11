@@ -1,85 +1,159 @@
 import Link from "next/link";
-import { GraduationCap, Mail, Phone, MapPin } from "lucide-react";
-import { getLocale } from "@/shared/lib/i18n/server";
+import Image from "next/image";
+import {
+  GraduationCap,
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  Lock,
+  ArrowRight,
+  ChevronRight,
+} from "lucide-react";
+import { getLocale, getT } from "@/i18n/server";
+import type { PortalTenantInfo } from "@/shared/lib/portal-tenant";
 
-export async function PortalFooter() {
+export async function PortalFooter({ tenant }: { tenant?: PortalTenantInfo | null }) {
   const locale = await getLocale();
+  const t = await getT();
+
+  const brandName = tenant
+    ? (locale === "th" ? tenant.nameTh : tenant.nameEn)
+    : t("portal.brand.name");
+
+  const brandSubtitle = tenant
+    ? (locale === "th" ? tenant.nameEn : tenant.nameTh)
+    : t("portal.brand.subtitle");
+
+  const quickLinks = [
+    { href: "/", label: t("nav.home") },
+    { href: "/curriculum", label: t("curriculum.nav") },
+    { href: "/schedule", label: t("schedule.nav") },
+    { href: "/alumni", label: t("alumni.nav") },
+    { href: "/statistics", label: t("stats.nav") },
+    { href: "/news", label: t("news.title") },
+    { href: "/staff", label: t("staff.title") },
+  ];
 
   return (
-    <footer className="border-t border-border/60 bg-muted/30">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Col 1: Faculty Info */}
-          <div className="space-y-4 md:col-span-2">
+    <footer className="mt-20 relative bg-[var(--ink-band)] text-[var(--ink-band-text)] overflow-hidden after:content-[''] after:absolute after:inset-x-0 after:top-0 after:h-[1px] after:bg-[var(--edge-grad-h)] after:pointer-events-none">
+      {/* Ambient background glow matching tenant palette */}
+      <div
+        aria-hidden="true"
+        className="absolute top-0 right-1/4 -translate-y-1/2 w-96 h-96 bg-[var(--brand-glow)] rounded-full blur-3xl opacity-20 pointer-events-none"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute bottom-0 left-10 translate-y-1/2 w-80 h-80 bg-[var(--brand2-glow)] rounded-full blur-3xl opacity-15 pointer-events-none"
+      />
+
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-12">
+          {/* Col 1: Faculty / Tenant Info (5 cols) */}
+          <div className="md:col-span-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <GraduationCap className="h-5 w-5" />
+              <div className="flex h-11 w-11 items-center justify-center rounded-[var(--r-md)] bg-[var(--brand)] text-[var(--on-brand)] shadow-md overflow-hidden shrink-0">
+                {tenant?.logoUrl ? (
+                  <Image
+                    src={tenant.logoUrl}
+                    alt={brandName}
+                    width={40}
+                    height={40}
+                    unoptimized
+                    className="h-full w-full object-contain p-1"
+                  />
+                ) : (
+                  <GraduationCap className="h-6 w-6" />
+                )}
               </div>
-              <span className="font-bold text-base text-foreground">
-                {locale === "th" ? "คณะวิทยาการสารสนเทศ" : "Faculty of Informatics"}
-              </span>
+              <div className="min-w-0">
+                <span className="block font-bold text-base sm:text-lg text-[var(--ink-band-text)] leading-snug tracking-tight truncate">
+                  {brandName}
+                </span>
+                <span className="block text-xs text-[var(--ink-band-muted)] leading-tight mt-0.5 truncate">
+                  {brandSubtitle}
+                </span>
+              </div>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-md">
-              {locale === "th"
-                ? "มุ่งผลิตบัณฑิตสู่ความเป็นเลิศด้านปัญญาประดิษฐ์ วิศวกรรมซอฟต์แวร์ และนวัตกรรมดิจิทัลระดับสากล เพื่อขับเคลื่อนเศรษฐกิจและสังคมแห่งอนาคต"
-                : "Committed to academic excellence in Artificial Intelligence, Software Engineering, and digital innovation to empower future societies."}
+
+            <p className="text-sm text-[var(--ink-band-muted)] leading-relaxed max-w-md">
+              {t("portal.footer.tagline")}
             </p>
+
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 border border-white/10 text-[var(--ink-band-muted)]">
+              <span>✨</span>
+              <span>{locale === "th" ? "สถาบันการศึกษาชั้นนำด้านดิจิทัลและปัญญาประดิษฐ์" : "Excellence in Digital Innovation & AI"}</span>
+            </div>
           </div>
 
-          {/* Col 2: Quick Links */}
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
-              {locale === "th" ? "ทางลัด" : "Quick Links"}
+          {/* Col 2: Quick Links (3 cols) */}
+          <div className="md:col-span-3">
+            <h3 className="font-semibold text-xs tracking-wider uppercase text-[var(--ink-band-text)] mb-4 flex items-center gap-2 opacity-90">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] inline-block" />
+              {t("portal.footer.quickLinks")}
             </h3>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <Link href="/" className="hover:text-primary transition-colors">
-                  {locale === "th" ? "หน้าแรก" : "Home"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/news" className="hover:text-primary transition-colors">
-                  {locale === "th" ? "ข่าวประชาสัมพันธ์" : "News & PR"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/staff" className="hover:text-primary transition-colors">
-                  {locale === "th" ? "ทำเนียบคณาจารย์" : "Faculty Directory"}
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="hover:text-primary transition-colors">
-                  {locale === "th" ? "ระบบจัดการหลังบ้าน" : "Staff Console"}
-                </Link>
-              </li>
+            <ul className="space-y-2.5 text-sm text-[var(--ink-band-muted)]">
+              {quickLinks.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="inline-flex items-center gap-1 hover:text-[var(--ink-band-text)] hover:translate-x-1 transition-all group"
+                  >
+                    <ChevronRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--brand-light)] -ml-3 group-hover:ml-0" />
+                    <span>{link.label}</span>
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Col 3: Contact Info */}
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
-              {locale === "th" ? "ติดต่อเรา" : "Contact Us"}
+          {/* Col 3: Contact & Access (4 cols) */}
+          <div className="md:col-span-4 space-y-4">
+            <h3 className="font-semibold text-xs tracking-wider uppercase text-[var(--ink-band-text)] mb-4 flex items-center gap-2 opacity-90">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand2)] inline-block" />
+              {t("portal.footer.contact")}
             </h3>
-            <ul className="space-y-3 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                <span>{locale === "th" ? "อาคารเทคโนโลยีสารสนเทศ 123 ถ.มหาวิทยาลัย" : "IT Complex, 123 University Rd."}</span>
+            <ul className="space-y-3 text-sm text-[var(--ink-band-muted)]">
+              <li className="flex items-start gap-2.5">
+                <MapPin className="h-4 w-4 mt-0.5 text-[var(--brand-light)] shrink-0" />
+                <span className="leading-relaxed">{t("portal.footer.address")}</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-primary shrink-0" />
+              <li className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
                 <span>02-123-4500</span>
               </li>
-              <li className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-primary shrink-0" />
-                <span>contact@informatics.university.ac.th</span>
+              <li className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
+                <span className="truncate">contact@informatics.university.ac.th</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Clock className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
+                <span>{t("portal.footer.hours")}</span>
               </li>
             </ul>
+
+            {/* Staff console portal link */}
+            <Link
+              href="/login"
+              className="flex items-center justify-between p-3 rounded-[var(--r-md)] bg-white/5 hover:bg-white/10 border border-white/10 text-xs transition-colors group mt-2"
+            >
+              <span className="text-[var(--ink-band-muted)] group-hover:text-[var(--ink-band-text)] font-medium flex items-center gap-2">
+                <Lock className="h-3.5 w-3.5 text-[var(--brand-light)]" />
+                {t("portal.footer.staffConsole")}
+              </span>
+              <ArrowRight className="h-3.5 w-3.5 text-[var(--ink-band-muted)] group-hover:text-[var(--ink-band-text)] group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
         </div>
 
-        <div className="mt-8 border-t border-border/40 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-muted-foreground gap-4">
-          <p>© {new Date().getFullYear()} Faculty of Informatics. All rights reserved.</p>
-          <p>Built with VibeCore Modular Monolith Framework</p>
+        {/* Bottom copyright bar */}
+        <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-[var(--ink-band-muted)] gap-4">
+          <p>© {new Date().getFullYear()} {brandName}. {t("portal.footer.rights")}</p>
+          <div className="flex items-center gap-2 opacity-80">
+            <span>{t("portal.footer.poweredBy")} VibeCore Framework</span>
+            <span className="w-1 h-1 rounded-full bg-white/30" />
+            <span className="font-medium text-[var(--ink-band-text)]">Liyon Theme</span>
+          </div>
         </div>
       </div>
     </footer>

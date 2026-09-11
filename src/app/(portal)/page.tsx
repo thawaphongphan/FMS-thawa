@@ -3,7 +3,6 @@ import Image from "next/image";
 import {
   ArrowRight,
   Newspaper,
-  GraduationCap,
   Calendar,
   Users,
   BarChart3,
@@ -18,6 +17,7 @@ import { getDefaultTenantId } from "@/shared/lib/portal-tenant";
 import { listPublishedArticles } from "@/features/news/server";
 import { listPublicStaff } from "@/features/staff/server";
 import { Button } from "@/components/ui/button";
+import { CinematicHero } from "./_components/cinematic-hero";
 
 export default async function PortalHomePage() {
   const locale = await getLocale();
@@ -65,64 +65,8 @@ export default async function PortalHomePage() {
 
   return (
     <div className="space-y-16 pb-16">
-      {/* 1. Hero Section */}
-      <section className="relative overflow-hidden border-b border-border/50 bg-gradient-to-b from-primary/5 via-background to-background py-20 md:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary mb-6 animate-pulse">
-            <span>✨ {t("portal.hero.badge")}</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
-            {t("portal.hero.title")}
-          </h1>
-
-          <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            {t("portal.hero.subtitle")}
-          </p>
-
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Link href="/news">
-              <Button size="lg" className="gap-2 shadow-md">
-                <Newspaper className="h-4 w-4" />
-                {t("portal.hero.announcements")}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/staff">
-              <Button size="lg" variant="outline" className="gap-2">
-                <GraduationCap className="h-4 w-4" />
-                {t("portal.hero.faculty")}
-              </Button>
-            </Link>
-            <Link href="/mock-hero">
-              <Button size="lg" variant="secondary" className="gap-2 border border-primary/30 hover:border-primary/60 bg-gradient-to-r from-amber-500/10 via-primary/10 to-purple-500/10">
-                <span className="text-amber-500">✨</span>
-                {t("portal.hero.cinematic")}
-              </Button>
-            </Link>
-          </div>
-
-          {/* Quick KPI stats */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto border-t border-border/60 pt-10">
-            <div>
-              <div className="text-3xl font-bold text-primary">1,200+</div>
-              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.students")}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">3</div>
-              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.departments")}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">98.5%</div>
-              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.employmentRate")}</div>
-            </div>
-            <div>
-              <div className="text-3xl font-bold text-primary">50+</div>
-              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.publications")}</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 1. Cinematic Hero Section */}
+      <CinematicHero />
 
       {/* 2. Platform Core Pillars */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

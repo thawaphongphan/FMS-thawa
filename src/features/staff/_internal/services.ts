@@ -181,9 +181,16 @@ export async function deleteStaff(tenantId: string, id: string): Promise<void> {
   });
 }
 
+function formatFullName(title?: string | null, first?: string | null, last?: string | null): string {
+  const cleanTitle = (title ?? "").trim() === "-" ? "" : (title ?? "").trim();
+  const cleanFirst = (first ?? "").trim();
+  const cleanLast = (last ?? "").trim() === "-" ? "" : (last ?? "").trim();
+  return [cleanTitle, cleanFirst, cleanLast].filter(Boolean).join(" ");
+}
+
 function mapStaffToDto(row: StaffProfile & { department: Department }): StaffProfileDto {
-  const fullNameTh = `${row.academicTitleTh} ${row.firstNameTh} ${row.lastNameTh}`.trim();
-  const fullNameEn = `${row.academicTitleEn} ${row.firstNameEn} ${row.lastNameEn}`.trim();
+  const fullNameTh = formatFullName(row.academicTitleTh, row.firstNameTh, row.lastNameTh);
+  const fullNameEn = formatFullName(row.academicTitleEn, row.firstNameEn, row.lastNameEn);
   const educationHistory: EducationItem[] = Array.isArray(row.educationHistory)
     ? (row.educationHistory as unknown as EducationItem[])
     : [];

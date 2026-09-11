@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { cn } from "@/shared/lib/utils";
@@ -27,6 +28,7 @@ export interface AdminShellProps {
   brandName: string;
   brandTagline: string;
   brandHref: string;
+  brandLogoUrl?: string | null;
   /** ชื่อหน้าปัจจุบัน (`.tenant` ใน navbar) — ว่างได้ถ้าหาไม่เจอ (ไม่ fallback เป็นค่าปลอม) */
   /** breadcrumb บน navbar — ขั้นสุดท้ายเป็น span[aria-current=page] (h1 เป็นของหัวหน้าในเนื้อหา) ขั้นก่อนหน้าเป็นลิงก์ · ว่าง = ไม่แสดง */
   breadcrumb: Crumb[];
@@ -86,6 +88,7 @@ export function AdminShell({
   brandName,
   brandTagline,
   brandHref,
+  brandLogoUrl,
   breadcrumb,
   breadcrumbLabel,
   roleLabel,
@@ -112,11 +115,22 @@ export function AdminShell({
     <div className={cn("adm", collapsed && "narrow", drawerOpen && "drawer")}>
       <header className="adm-head">
         <Link className="brand-blk" href={brandHref}>
-          <i>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M22 10 12 5 2 10l10 5 10-5Z" />
-              <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
-            </svg>
+          <i className={brandLogoUrl ? "!bg-primary/10 overflow-hidden" : undefined}>
+            {brandLogoUrl ? (
+              <Image
+                src={brandLogoUrl}
+                alt={brandName}
+                width={34}
+                height={34}
+                unoptimized
+                className="h-full w-full object-contain p-0.5 rounded-[inherit]"
+              />
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+                <path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" />
+              </svg>
+            )}
           </i>
           <div className="t">
             <b>{brandName}</b>

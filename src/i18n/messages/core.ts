@@ -85,4 +85,15 @@ export const MESSAGES: Dictionary = {
   "portal.staff.viewAll": { th: "ดูทำเนียบทั้งหมด", en: "Full Directory" },
   "common.requiredFields": { th: "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน", en: "Please fill in all required fields" },
   "common.credits": { th: "หน่วยกิต", en: "credits" },
+  "portal.footer.tagline": {
+    th: "มุ่งผลิตบัณฑิตสู่ความเป็นเลิศด้านปัญญาประดิษฐ์ วิศวกรรมซอฟต์แวร์ และนวัตกรรมดิจิทัลระดับสากล เพื่อขับเคลื่อนเศรษฐกิจและสังคมแห่งอนาคต",
+    en: "Committed to academic excellence in Artificial Intelligence, Software Engineering, and digital innovation to empower future societies.",
+  },
+  "portal.footer.quickLinks": { th: "เมนูทางลัด", en: "Quick Links" },
+  "portal.footer.contact": { th: "ติดต่อเรา", en: "Contact Us" },
+  "portal.footer.address": { th: "อาคารเทคโนโลยีสารสนเทศ 123 ถ.มหาวิทยาลัย", en: "IT Complex, 123 University Rd." },
+  "portal.footer.hours": { th: "วันจันทร์ - ศุกร์: 08:30 - 16:30 น.", en: "Mon - Fri: 08:30 - 16:30" },
+  "portal.footer.rights": { th: "สงวนลิขสิทธิ์ทั้งหมด", en: "All rights reserved." },
+  "portal.footer.staffConsole": { th: "ระบบจัดการสำหรับเจ้าหน้าที่", en: "Staff Console" },
 };
+

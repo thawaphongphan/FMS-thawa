@@ -15,7 +15,7 @@ async function main() {
     console.error("[seed] ปฏิเสธ: NODE_ENV=production — ใช้ npm run db:bootstrap แทน");
     process.exit(1);
   }
-  const core = await seedCore(prisma, { tenantCode: "DEMO", nameTh: "องค์กรตัวอย่าง", nameEn: "Sample Organization" });
+  const core = await seedCore(prisma, { tenantCode: "DEMO", nameTh: "วิทยาลัยพระธรรมทูต", nameEn: "Dhammaduta College" });
   const hash = await bcrypt.hash(DEV_PASSWORD, 12);
   const users = [
     { email: "admin@app.local", name: "ผู้ดูแลสูงสุด", roles: ["SUPER_ADMIN"] },
@@ -108,116 +108,402 @@ async function main() {
     },
   });
 
-  // --- Seed ภาควิชา ---
-  const deptCS = await prisma.department.upsert({
+  // --- Seed ภาควิชา/ส่วนงาน วิทยาลัยพระธรรมทูต ---
+  const deptExec = await prisma.department.upsert({
+    where: { tenantId_code: { tenantId: core.tenantId, code: "EXEC" } },
+    update: { nameTh: "คณะผู้บริหาร", nameEn: "Executive Board", orderIndex: 1 },
+    create: { tenantId: core.tenantId, code: "EXEC", nameTh: "คณะผู้บริหาร", nameEn: "Executive Board", orderIndex: 1 },
+  });
+
+  const deptOffice = await prisma.department.upsert({
+    where: { tenantId_code: { tenantId: core.tenantId, code: "OFFICE" } },
+    update: { nameTh: "สำนักงานวิทยาลัย", nameEn: "Office of the College", orderIndex: 2 },
+    create: { tenantId: core.tenantId, code: "OFFICE", nameTh: "สำนักงานวิทยาลัย", nameEn: "Office of the College", orderIndex: 2 },
+  });
+
+  const deptAcademic = await prisma.department.upsert({
+    where: { tenantId_code: { tenantId: core.tenantId, code: "ACADEMIC" } },
+    update: { nameTh: "สำนักงานวิชาการ", nameEn: "Office of Academic Affairs", orderIndex: 3 },
+    create: { tenantId: core.tenantId, code: "ACADEMIC", nameTh: "สำนักงานวิชาการ", nameEn: "Office of Academic Affairs", orderIndex: 3 },
+  });
+
+  const deptFaculty = await prisma.department.upsert({
+    where: { tenantId_code: { tenantId: core.tenantId, code: "FACULTY" } },
+    update: { nameTh: "คณาจารย์ประจำ", nameEn: "Faculty Members", orderIndex: 4 },
+    create: { tenantId: core.tenantId, code: "FACULTY", nameTh: "คณาจารย์ประจำ", nameEn: "Faculty Members", orderIndex: 4 },
+  });
+
+  // คงภาควิชา CS/SE/DS เพื่อรองรับหลักสูตรตัวอย่าง
+  await prisma.department.upsert({
     where: { tenantId_code: { tenantId: core.tenantId, code: "CS" } },
     update: {},
-    create: { tenantId: core.tenantId, code: "CS", nameTh: "ภาควิชาวิทยาการคอมพิวเตอร์", nameEn: "Department of Computer Science", orderIndex: 1 },
+    create: { tenantId: core.tenantId, code: "CS", nameTh: "ภาควิชาวิทยาการคอมพิวเตอร์", nameEn: "Department of Computer Science", orderIndex: 5 },
   });
-
-  const deptSE = await prisma.department.upsert({
+  await prisma.department.upsert({
     where: { tenantId_code: { tenantId: core.tenantId, code: "SE" } },
     update: {},
-    create: { tenantId: core.tenantId, code: "SE", nameTh: "ภาควิชาวิศวกรรมซอฟต์แวร์", nameEn: "Department of Software Engineering", orderIndex: 2 },
+    create: { tenantId: core.tenantId, code: "SE", nameTh: "ภาควิชาวิศวกรรมซอฟต์แวร์", nameEn: "Department of Software Engineering", orderIndex: 6 },
   });
-
-  const deptDS = await prisma.department.upsert({
+  await prisma.department.upsert({
     where: { tenantId_code: { tenantId: core.tenantId, code: "DS" } },
     update: {},
-    create: { tenantId: core.tenantId, code: "DS", nameTh: "ภาควิชาวิทยาการข้อมูลและปัญญาประดิษฐ์", nameEn: "Department of Data Science & AI", orderIndex: 3 },
+    create: { tenantId: core.tenantId, code: "DS", nameTh: "ภาควิชาวิทยาการข้อมูลและปัญญาประดิษฐ์", nameEn: "Department of Data Science & AI", orderIndex: 7 },
   });
 
-  // --- Seed บุคลากรและคณาจารย์ ---
-  const staff1 = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "dean@app.local" } });
-  if (!staff1) {
-    await prisma.staffProfile.create({
-      data: {
-        tenantId: core.tenantId,
-        departmentId: deptCS.id,
-        academicTitleTh: "ศ.ดร.",
-        academicTitleEn: "Prof. Dr.",
-        firstNameTh: "สมชาย",
-        lastNameTh: "นพคุณ",
-        firstNameEn: "Somchai",
-        lastNameEn: "Noppakun",
-        email: "dean@app.local",
-        phoneNumber: "02-123-4501",
-        officeRoom: "ตึก 1 ห้อง 401",
-        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-        adminPositionTh: "คณบดี",
-        adminPositionEn: "Dean",
-        bioTh: "ผู้เชี่ยวชาญด้านปัญญาประดิษฐ์ สถาปัตยกรรมระบบคลาวด์ และผู้นำการปฏิวัติดิจิทัลในสถาบันอุดมศึกษา",
-        bioEn: "Expert in Artificial Intelligence, Cloud Architectures, and higher education digital transformation.",
-        researchInterests: ["Artificial Intelligence", "Cloud Computing", "Distributed Systems"],
-        educationHistory: [
-          { degree: "Ph.D. in Computer Science", field: "AI & Machine Learning", institution: "Stanford University", year: "2010" },
-          { degree: "M.S. in Computer Science", field: "Computer Engineering", institution: "Chulalongkorn University", year: "2005" },
-        ],
-        orderIndex: 1,
-        status: "ACTIVE",
-      },
-    });
-  }
+  // --- Seed บุคลากรและคณาจารย์วิทยาลัยพระธรรมทูต (15 ท่าน) ---
+  const odcStaffList = [
+    {
+      departmentId: deptExec.id,
+      academicTitleTh: "ศ.ดร.",
+      academicTitleEn: "Prof. Dr.",
+      firstNameTh: "พระพรหมวัชรธีราจารย์",
+      lastNameTh: "(สมจินต์ สมฺมาปญฺโญ)",
+      firstNameEn: "Phra Brahmavajiratherachan",
+      lastNameEn: "(Somjin Sammapanno)",
+      email: "rector@mcu.ac.th",
+      phoneNumber: "035-248-000",
+      officeRoom: "อาคาร มวก. 48 พรรษา",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/litestuser-1.png",
+      adminPositionTh: "อธิการบดี",
+      adminPositionEn: "Rector",
+      bioTh: "อธิการบดี มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Rector of Mahachulalongkornrajavidyalaya University",
+      researchInterests: ["พระพุทธศาสนาเถรวาท", "การเผยแผ่พระพุทธศาสนา", "ปรัชญาอินเดีย"],
+      educationHistory: [
+        { degree: "ป.ธ.9", field: "เปรียญธรรม 9 ประโยค", institution: "สำนักเรียนวัดปากน้ำ ภาษีเจริญ" },
+        { degree: "Ph.D.", field: "Philosophy", institution: "Banaras Hindu University, India" },
+      ],
+      orderIndex: 1,
+    },
+    {
+      departmentId: deptExec.id,
+      academicTitleTh: "ผศ.ดร.",
+      academicTitleEn: "Asst. Prof. Dr.",
+      firstNameTh: "พระสิทธิวัชรบัณฑิต",
+      lastNameTh: "(วีรธมฺโม)",
+      firstNameEn: "Phra Sitthivajarabundit",
+      lastNameEn: "(Viradhammo)",
+      email: "foreign@mcu.ac.th",
+      phoneNumber: "035-248-000",
+      officeRoom: "อาคาร มวก. 48 พรรษา",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/10-2.png",
+      adminPositionTh: "รองอธิการบดีฝ่ายกิจการต่างประเทศ",
+      adminPositionEn: "Vice Rector for Foreign Affairs",
+      bioTh: "รองอธิการบดีฝ่ายกิจการต่างประเทศ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Vice Rector for Foreign Affairs, Mahachulalongkornrajavidyalaya University",
+      researchInterests: ["กิจการต่างประเทศ", "พระธรรมทูตสายต่างประเทศ", "พระพุทธศาสนาร่วมสมัย"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 2,
+    },
+    {
+      departmentId: deptExec.id,
+      academicTitleTh: "ผศ.ดร.",
+      academicTitleEn: "Asst. Prof. Dr.",
+      firstNameTh: "บุญมี",
+      lastNameTh: "พรรษา",
+      firstNameEn: "Boonmee",
+      lastNameEn: "Pansa",
+      email: "boonmee.pan@mcu.ac.th",
+      phoneNumber: "035-248-000",
+      officeRoom: "อาคาร มวก. 48 พรรษา",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/11.png",
+      adminPositionTh: "ผู้ช่วยอธิการบดีฝ่ายกิจการต่างประเทศ",
+      adminPositionEn: "Assistant to the Rector for Foreign Affairs",
+      bioTh: "ผู้ช่วยอธิการบดีฝ่ายกิจการต่างประเทศ มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Assistant to the Rector for Foreign Affairs, Mahachulalongkornrajavidyalaya University",
+      researchInterests: ["การศึกษานานาชาติ", "ภาษาศาสตร์และการสื่อสาร", "ความสัมพันธ์ระหว่างประเทศ"],
+      educationHistory: [
+        { degree: "Ph.D.", field: "Linguistics", institution: "Delhi University, India" },
+      ],
+      orderIndex: 3,
+    },
+    {
+      departmentId: deptExec.id,
+      academicTitleTh: "ดร.",
+      academicTitleEn: "Dr.",
+      firstNameTh: "พระครูสุตรัตนบัณฑิต",
+      lastNameTh: "(ประยูร โชติวโร)",
+      firstNameEn: "Phrakhrusutratanapundit",
+      lastNameEn: "(Prayoon Chotavaro)",
+      email: "prayoon.kham@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องผู้อำนวยการวิทยาลัยพระธรรมทูต",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/12.png",
+      adminPositionTh: "ผู้อำนวยการวิทยาลัยพระธรรมทูต",
+      adminPositionEn: "Director of Dhammaduta College",
+      bioTh: "ผู้อำนวยการวิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Director of Dhammaduta College, Mahachulalongkornrajavidyalaya University",
+      researchInterests: ["การบริหารงานพระธรรมทูต", "การเผยแผ่พระพุทธศาสนาระดับสากล", "ภาวะผู้นำทางพุทธศาสนา"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "การบริหารการศึกษา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+        { degree: "พธ.ม.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 4,
+    },
+    {
+      departmentId: deptExec.id,
+      academicTitleTh: "ดร.",
+      academicTitleEn: "Dr.",
+      firstNameTh: "พระครูใบฎีกาแสงเฮือง",
+      lastNameTh: "นรินฺโท",
+      firstNameEn: "Phrakhrubaidika Saenghuang",
+      lastNameEn: "Narindo",
+      email: "saenghuang@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องรองผู้อำนวยการฝ่ายบริหาร",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/13.png",
+      adminPositionTh: "รองผู้อำนวยการฝ่ายบริหาร",
+      adminPositionEn: "Deputy Director for Administration",
+      bioTh: "รองผู้อำนวยการฝ่ายบริหาร วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Deputy Director for Administration, Dhammaduta College",
+      researchInterests: ["การบริหารกิจการสงฆ์", "การจัดองค์กรพระธรรมทูต", "การบริหารเชิงกลยุทธ์"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "พุทธบริหารการศึกษา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 5,
+    },
+    {
+      departmentId: deptExec.id,
+      academicTitleTh: "ผศ.ดร.",
+      academicTitleEn: "Asst. Prof. Dr.",
+      firstNameTh: "พระมหาไพฑูรย์",
+      lastNameTh: "ปนฺตนนฺโท",
+      firstNameEn: "Phramaha Paitoon",
+      lastNameEn: "Pantanando",
+      email: "paitoon.wan@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องรองผู้อำนวยการฝ่ายวิชาการ",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2025/03/ดีไซน์ที่ยังไม่ได้ตั้งชื่อ-1-scaled.jpg",
+      adminPositionTh: "รองผู้อำนวยการฝ่ายวิชาการ",
+      adminPositionEn: "Deputy Director for Academic Affairs",
+      bioTh: "รองผู้อำนวยการฝ่ายวิชาการ วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Deputy Director for Academic Affairs, Dhammaduta College",
+      researchInterests: ["การพัฒนาหลักสูตรพระธรรมทูต", "วิชาการพระพุทธศาสนา", "การจัดการเรียนการสอนพระปริยัติธรรม"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 6,
+    },
+    {
+      departmentId: deptOffice.id,
+      academicTitleTh: "",
+      academicTitleEn: "",
+      firstNameTh: "พระมหากฤษณ",
+      lastNameTh: "กิตฺติภทฺโท",
+      firstNameEn: "Phramaha Krisana",
+      lastNameEn: "Kittiphattho",
+      email: "kritsana.bao@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "สำนักงานวิทยาลัยพระธรรมทูต",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/19.png",
+      adminPositionTh: "ผู้อำนวยการสำนักงานวิทยาลัย",
+      adminPositionEn: "Director of College Office",
+      bioTh: "ผู้อำนวยการสำนักงานวิทยาลัย วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Director of College Office, Dhammaduta College",
+      researchInterests: ["การบริหารสำนักงาน", "เทคโนโลยีสารสนเทศเพื่อการบริหาร", "งานสารบรรณและนโยบาย"],
+      educationHistory: [
+        { degree: "พธ.ม.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 7,
+    },
+    {
+      departmentId: deptAcademic.id,
+      academicTitleTh: "",
+      academicTitleEn: "",
+      firstNameTh: "พระมหาศักดิ์ชาย",
+      lastNameTh: "โกวิโท",
+      firstNameEn: "Phramaha Sakchai",
+      lastNameEn: "Kovido",
+      email: "sakchai.kov@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "สำนักงานวิชาการ วิทยาลัยพระธรรมทูต",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/16.png",
+      adminPositionTh: "ผู้อำนวยการสำนักงานวิชาการ",
+      adminPositionEn: "Director of Academic Office",
+      bioTh: "ผู้อำนวยการสำนักงานวิชาการ วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Director of Academic Office, Dhammaduta College",
+      researchInterests: ["งานบริการวิชาการ", "การประกันคุณภาพการศึกษา", "การวิจัยทางพระพุทธศาสนา"],
+      educationHistory: [
+        { degree: "พธ.ม.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 8,
+    },
+    {
+      departmentId: deptFaculty.id,
+      academicTitleTh: "ผศ.ดร.",
+      academicTitleEn: "Asst. Prof. Dr.",
+      firstNameTh: "พระครูธรรมธรวรเดชา",
+      lastNameTh: "อคฺคเตโช",
+      firstNameEn: "Phrakhrudhammathorn Woradecha",
+      lastNameEn: "Aggatecho",
+      email: "wpa2546@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องพักคณาจารย์",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2023/10/รูป-700-×-700px-3.png",
+      adminPositionTh: "อาจารย์ประจำ",
+      adminPositionEn: "Lecturer",
+      bioTh: "อาจารย์ประจำ วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Lecturer, Dhammaduta College",
+      researchInterests: ["พระพุทธศาสนากับการสื่อสาร", "จิตวิทยากับการเผยแผ่ธรรม", "คัมภีร์พระไตรปิฎก"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 9,
+    },
+    {
+      departmentId: deptFaculty.id,
+      academicTitleTh: "ดร.",
+      academicTitleEn: "Dr.",
+      firstNameTh: "พระครูสังฆกิจวิริยะ",
+      lastNameTh: "(วิริยธโร)",
+      firstNameEn: "Phrakhrusangkhakitviriya",
+      lastNameEn: "(Viriyadharo)",
+      email: "sangkhakit@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องพักคณาจารย์",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2024/01/22.png",
+      adminPositionTh: "อาจารย์ประจำ",
+      adminPositionEn: "Lecturer",
+      bioTh: "อาจารย์ประจำ วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Lecturer, Dhammaduta College",
+      researchInterests: ["การฝึกอบรมวิปัสสนากรรมฐาน", "การเผยแผ่เชิงรุก", "พุทธจิตวิทยา"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 10,
+    },
+    {
+      departmentId: deptFaculty.id,
+      academicTitleTh: "ดร.",
+      academicTitleEn: "Dr.",
+      firstNameTh: "พระณัฐภัทร",
+      lastNameTh: "กิจฺจกาโร",
+      firstNameEn: "Phra Natthapat",
+      lastNameEn: "Kiccakaro",
+      email: "natthapat.kic@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องพักคณาจารย์",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2025/12/รูปบุคลากร-DC-4-scaled.jpg",
+      adminPositionTh: "อาจารย์ประจำ",
+      adminPositionEn: "Lecturer",
+      bioTh: "อาจารย์ประจำ วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Lecturer, Dhammaduta College",
+      researchInterests: ["ภาษาอังกฤษเพื่อการเผยแผ่พระพุทธศาสนา", "ศาสนาเปรียบเทียบ", "การสื่อสารข้ามวัฒนธรรม"],
+      educationHistory: [
+        { degree: "พธ.ด.", field: "พระพุทธศาสนา", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 11,
+    },
+    {
+      departmentId: deptFaculty.id,
+      academicTitleTh: "ดร.",
+      academicTitleEn: "Dr.",
+      firstNameTh: "วิเชียร",
+      lastNameTh: "สิงห์คิบุตร",
+      firstNameEn: "Wichian",
+      lastNameEn: "Singkhibut",
+      email: "wichian.sin@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "ห้องพักคณาจารย์",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2025/12/รูปบุคลากร-DC-scaled.jpg",
+      adminPositionTh: "อาจารย์ประจำ",
+      adminPositionEn: "Lecturer",
+      bioTh: "อาจารย์ประจำ วิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Lecturer, Dhammaduta College",
+      researchInterests: ["การวิจัยทางสังคมศาสตร์และพระพุทธศาสนา", "สถิติและการวิเคราะห์ข้อมูล", "นวัตกรรมทางการศึกษา"],
+      educationHistory: [
+        { degree: "Ph.D.", field: "Education", institution: "Mahachulalongkornrajavidyalaya University" },
+      ],
+      orderIndex: 12,
+    },
+    {
+      departmentId: deptOffice.id,
+      academicTitleTh: "",
+      academicTitleEn: "",
+      firstNameTh: "พระคำเสา",
+      lastNameTh: "สุจิตฺโต",
+      firstNameEn: "Phra Khamsao",
+      lastNameEn: "Sucitto",
+      email: "khamsao.suc@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "สำนักงานวิทยาลัยพระธรรมทูต",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2024/01/24.png",
+      adminPositionTh: "นักวิเทศสัมพันธ์",
+      adminPositionEn: "Foreign Relations Officer",
+      bioTh: "นักวิเทศสัมพันธ์ สังกัดวิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Foreign Relations Officer, Dhammaduta College",
+      researchInterests: ["การประสานงานระหว่างประเทศ", "ภาษาอังกฤษเพื่อการสื่อสาร", "พิธีการทูตทางศาสนา"],
+      educationHistory: [
+        { degree: "พธ.บ.", field: "ภาษาอังกฤษ", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 13,
+    },
+    {
+      departmentId: deptOffice.id,
+      academicTitleTh: "",
+      academicTitleEn: "",
+      firstNameTh: "พระเทวพงศ์พันธ์",
+      lastNameTh: "ตนฺติปาโล",
+      firstNameEn: "Phra Thawaphongphan",
+      lastNameEn: "Tantipalo",
+      email: "thawaphongphan@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "สำนักงานวิทยาลัยพระธรรมทูต (เลขที่ 0132002)",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2025/12/รูปบุคลากร-DC-3-scaled.jpg",
+      adminPositionTh: "นักวิชาการศึกษา",
+      adminPositionEn: "Education Officer",
+      bioTh: "นักวิชาการศึกษา สังกัดวิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "Education Officer, Dhammaduta College, Mahachulalongkornrajavidyalaya University",
+      researchInterests: ["เทคโนโลยีการศึกษา", "การพัฒนาเว็บไซต์มาตรฐานภาครัฐ", "การจัดการข้อมูลและการศึกษา"],
+      educationHistory: [
+        { degree: "บธ.บ. (คอมพิวเตอร์ธุรกิจ)", field: "คอมพิวเตอร์ธุรกิจ", institution: "มหาวิทยาลัยเอเชียอาคเนย์", year: "2558" },
+        { degree: "นักธรรมชั้นเอก", field: "ธรรมศึกษา", institution: "สำนักเรียนจังหวัดสมุทรสาคร", year: "2559" },
+        { degree: "ประกาศนียบัตร (วิชาชีพครู)", field: "วิชาชีพครู", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย", year: "2566" },
+      ],
+      orderIndex: 14,
+    },
+    {
+      departmentId: deptOffice.id,
+      academicTitleTh: "",
+      academicTitleEn: "",
+      firstNameTh: "พระมหาอนุรักษ์",
+      lastNameTh: "สุนฺทรวิลาโส",
+      firstNameEn: "Phramaha Anurak",
+      lastNameEn: "Suntharavilaso",
+      email: "anurak.sun@mcu.ac.th",
+      phoneNumber: "035-248-065",
+      officeRoom: "สำนักงานวิทยาลัยพระธรรมทูต",
+      avatarUrl: "https://odc.mcu.ac.th/wp-content/uploads/2025/12/รูปบุคลากร-DC-1-scaled.jpg",
+      adminPositionTh: "นักจัดการงานทั่วไป",
+      adminPositionEn: "General Administration Officer",
+      bioTh: "นักจัดการงานทั่วไป สังกัดวิทยาลัยพระธรรมทูต มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย",
+      bioEn: "General Administration Officer, Dhammaduta College",
+      researchInterests: ["การบริหารงานทั่วไป", "พัสดุและอาคารสถานที่", "การจัดประชุมและพิธีการ"],
+      educationHistory: [
+        { degree: "พธ.บ.", field: "การจัดการเชิงพุทธ", institution: "มหาวิทยาลัยมหาจุฬาลงกรณราชวิทยาลัย" },
+      ],
+      orderIndex: 15,
+    },
+  ];
 
-  const staff2 = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "vipada@app.local" } });
-  if (!staff2) {
-    await prisma.staffProfile.create({
-      data: {
-        tenantId: core.tenantId,
-        departmentId: deptSE.id,
-        academicTitleTh: "รศ.ดร.",
-        academicTitleEn: "Assoc. Prof. Dr.",
-        firstNameTh: "วิภาดา",
-        lastNameTh: "วรรณศิลป์",
-        firstNameEn: "Vipada",
-        lastNameEn: "Wannasin",
-        email: "vipada@app.local",
-        phoneNumber: "02-123-4502",
-        officeRoom: "ตึก 2 ห้อง 305",
-        avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
-        adminPositionTh: "รองคณบดีฝ่ายวิชาการ",
-        adminPositionEn: "Associate Dean for Academic Affairs",
-        bioTh: "นักวิจัยด้านวิศวกรรมซอฟต์แวร์ขั้นสูง สถาปัตยกรรม Microservices และกระบวนการพัฒนาซอฟต์แวร์แบบ Agile",
-        bioEn: "Specialist in Advanced Software Engineering, Microservices Architecture, and Agile Methodologies.",
-        researchInterests: ["Software Architecture", "Agile & DevOps", "Design Patterns"],
-        educationHistory: [
-          { degree: "Ph.D. in Software Engineering", field: "Software Systems", institution: "Imperial College London", year: "2014" },
-          { degree: "B.Sc. in Computer Science", field: "Software Development", institution: "Mahidol University", year: "2008" },
-        ],
-        orderIndex: 2,
-        status: "ACTIVE",
-      },
-    });
-  }
-
-  const staff3 = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "thanapol@app.local" } });
-  if (!staff3) {
-    await prisma.staffProfile.create({
-      data: {
-        tenantId: core.tenantId,
-        departmentId: deptDS.id,
-        academicTitleTh: "ผศ.ดร.",
-        academicTitleEn: "Asst. Prof. Dr.",
-        firstNameTh: "ธนพล",
-        lastNameTh: "รุ่งเรือง",
-        firstNameEn: "Thanapol",
-        lastNameEn: "Rungruang",
-        email: "thanapol@app.local",
-        phoneNumber: "02-123-4503",
-        officeRoom: "ตึก 3 ห้อง 210",
-        avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
-        adminPositionTh: "หัวหน้าภาควิชาวิทยาการข้อมูล",
-        adminPositionEn: "Head of Data Science Department",
-        bioTh: "เชี่ยวชาญด้าน Big Data Analytics, Deep Learning และการประยุกต์ใช้โมเดลภาษาขนาดใหญ่ (LLMs)",
-        bioEn: "Specialized in Big Data Analytics, Deep Learning, and Large Language Model applications.",
-        researchInterests: ["Data Science", "Deep Learning", "Natural Language Processing"],
-        educationHistory: [
-          { degree: "Ph.D. in Data Science", field: "Machine Learning", institution: "University of Melbourne", year: "2018" },
-        ],
-        orderIndex: 3,
-        status: "ACTIVE",
-      },
-    });
+  for (const s of odcStaffList) {
+    const existing = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: s.email } });
+    if (existing) {
+      await prisma.staffProfile.update({
+        where: { id: existing.id },
+        data: s,
+      });
+    } else {
+      await prisma.staffProfile.create({
+        data: {
+          tenantId: core.tenantId,
+          ...s,
+          status: "ACTIVE",
+        },
+      });
+    }
   }
 
   // --- Seed หลักสูตรการศึกษา ---
@@ -432,9 +718,9 @@ async function main() {
     },
   });
 
-  const staffDean = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "dean@app.local" } });
-  const staffVipada = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "vipada@app.local" } });
-  const staffThanapol = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "thanapol@app.local" } });
+  const staffDean = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "wpa2546@mcu.ac.th" } });
+  const staffVipada = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "sangkhakit@mcu.ac.th" } });
+  const staffThanapol = await prisma.staffProfile.findFirst({ where: { tenantId: core.tenantId, email: "natthapat.kic@mcu.ac.th" } });
 
   const currCS = await prisma.curriculum.findFirst({ where: { tenantId: core.tenantId, programCode: "CS-2569" } });
   const currSE = await prisma.curriculum.findFirst({ where: { tenantId: core.tenantId, programCode: "SE-2568" } });
