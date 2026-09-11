@@ -164,7 +164,7 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
       : "/videos/mainframe-cursor.mp4";
 
   return (
-    <section className="relative w-full min-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden bg-black text-white font-[var(--font-body)] select-text flex flex-col justify-between">
+    <section className="relative w-full min-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden bg-[#051124] text-white font-[var(--font-body)] select-text flex flex-col justify-between">
       {/* 3D BACKGROUND VIDEO CONTAINER (perspective-tilted & mouse-scrubbed) */}
       <div
         className="absolute inset-0 w-full h-full pointer-events-none transition-transform duration-75 ease-out"
@@ -186,8 +186,9 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
         />
       </div>
 
-      {/* Subtle cinematic gradient vignette */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none" />
+      {/* Dhammaduta ambient blue aura & vignette */}
+      <div className="absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(circle_at_72%_45%,rgba(5,86,202,0.32)_0%,rgba(4,14,29,0.1)_60%,transparent_80%)]" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-[#040e1d]/90 via-transparent to-[#040e1d]/50 pointer-events-none" />
 
       {/* NAVBAR (inside hero, z-index: 10) */}
       <header className="relative z-10 w-full px-5 sm:px-8 py-3.5 flex justify-between items-center bg-black/20 backdrop-blur-xs border-b border-white/10">
