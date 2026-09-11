@@ -24,6 +24,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = cookieLocale ?? session?.locale ?? DEFAULT_LOCALE; // spec B7: login จากเครื่องใหม่ได้ภาษาที่ผู้ใช้เคยเลือก
   return (
     <html lang={locale} data-palette={palette} suppressHydrationWarning>
+      <head>
+        <link rel="stylesheet" href="https://db.onlinewebfonts.com/c/5ac3fe7c6abd2f62067f266d89671492?family=HelveticaNowDisplay-Medium" />
+        <link rel="stylesheet" href="https://db.onlinewebfonts.com/c/1aa3377e489837a26d019bba501e779d?family=HelveticaNowDisplayW01-Rg" />
+      </head>
       <body className={`${inter.variable} ${sarabun.variable} font-sans antialiased`} suppressHydrationWarning>
         <div className="bg" aria-hidden="true" />
         <I18nProvider locale={locale} messages={UI_MESSAGES}>

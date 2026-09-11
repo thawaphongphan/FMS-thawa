@@ -60,7 +60,7 @@ export function PortalHeader({ tenant }: { tenant?: PortalTenantInfo | null }) {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full h-16 bg-[var(--glass)] backdrop-blur-[18px] backdrop-saturate-[140%] shadow-[var(--shadow)] relative after:content-[''] after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-[var(--edge-grad-h)] after:pointer-events-none">
+    <header className="portal-header sticky top-0 z-50 w-full h-16 bg-[var(--glass)] backdrop-blur-[18px] backdrop-saturate-[140%] shadow-[var(--shadow)] relative after:content-[''] after:absolute after:inset-x-0 after:bottom-0 after:h-[1px] after:bg-[var(--edge-grad-h)] after:pointer-events-none">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 gap-4">
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3 group text-foreground shrink-0">
