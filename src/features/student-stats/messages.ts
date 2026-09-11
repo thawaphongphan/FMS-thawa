@@ -50,3 +50,5 @@ export const messages = {
   "perm.students:read": { th: "ดูข้อมูลและสถิตินิสิต", en: "View student records & statistics" },
   "perm.students:manage": { th: "จัดการข้อมูลนิสิต", en: "Manage student profiles" },
 } as const;
+
+export const MESSAGES = messages;

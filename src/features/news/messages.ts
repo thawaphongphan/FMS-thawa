@@ -39,3 +39,5 @@ export const MESSAGES: Dictionary = {
   "perm.news:manage": { th: "สร้างและแก้ไขข่าวประชาสัมพันธ์", en: "Create & edit news articles" },
   "perm.news:publish": { th: "อนุมัติและเผยแพร่ข่าว", en: "Approve & publish news" },
 };
+
+export const messages = MESSAGES;

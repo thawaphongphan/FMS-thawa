@@ -137,6 +137,17 @@ export async function createAlumni(tenantId: string, input: CreateAlumniInput) {
       featuredStoryTh: input.featuredStoryTh ?? null,
       featuredStoryEn: input.featuredStoryEn ?? null,
     },
+    include: {
+      curriculum: {
+        select: {
+          id: true,
+          programCode: true,
+          nameTh: true,
+          nameEn: true,
+          degreeLevel: true,
+        },
+      },
+    },
   });
 }
 
@@ -169,6 +180,17 @@ export async function updateAlumni(tenantId: string, input: UpdateAlumniInput) {
       isFeatured: input.isFeatured,
       featuredStoryTh: input.featuredStoryTh ?? null,
       featuredStoryEn: input.featuredStoryEn ?? null,
+    },
+    include: {
+      curriculum: {
+        select: {
+          id: true,
+          programCode: true,
+          nameTh: true,
+          nameEn: true,
+          degreeLevel: true,
+        },
+      },
     },
   });
 }

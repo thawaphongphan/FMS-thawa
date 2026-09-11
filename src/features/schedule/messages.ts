@@ -72,3 +72,5 @@ export const messages = {
   "perm.schedule:read": { th: "ดูข้อมูลตารางสอนและสอบ", en: "View timetables & exam schedules" },
   "perm.schedule:manage": { th: "จัดการตารางสอน ตารางสอบ และภาคเรียน", en: "Manage timetables, exam schedules & academic terms" },
 } as const;
+
+export const MESSAGES = messages;

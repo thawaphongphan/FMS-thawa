@@ -52,3 +52,5 @@ export const messages = {
   "perm.alumni:read": { th: "ดูข้อมูลศิษย์เก่า", en: "View alumni records" },
   "perm.alumni:manage": { th: "จัดการข้อมูลศิษย์เก่า", en: "Manage alumni records" },
 } as const;
+
+export const MESSAGES = messages;

@@ -833,7 +833,7 @@ export function ScheduleClient({
                 >
                   {options.courses.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.courseCode} - {locale === "th" ? c.nameTh : c.nameEn} ({c.credits} หน่วยกิต)
+                      {c.courseCode} - {locale === "th" ? c.nameTh : c.nameEn} ({c.credits} {t("common.credits")})
                     </option>
                   ))}
                 </select>

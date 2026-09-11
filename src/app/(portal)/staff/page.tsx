@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { GraduationCap, Mail, Phone, MapPin, Search, BookOpen, Award } from "lucide-react";
 import { getLocale, getT } from "@/i18n/server";
 import { getDefaultTenantId } from "@/shared/lib/portal-tenant";
@@ -101,10 +102,12 @@ export default async function StaffPortalPage({
                 <div className="flex items-start gap-4 mb-4">
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-primary/20 shadow-sm bg-muted">
                     {staff.avatarUrl ? (
-                      <img
+                      <Image
                         src={staff.avatarUrl}
                         alt={fullName}
-                        className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        fill
+                        unoptimized
+                        className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xl font-bold text-muted-foreground">

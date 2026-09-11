@@ -427,4 +427,5 @@ export type ClassScheduleRow = Awaited<ReturnType<typeof adminListClassSchedules
 export type ExamScheduleRow = Awaited<ReturnType<typeof adminListExamSchedules>>[number];
 export type AcademicTermRow = Awaited<ReturnType<typeof listAcademicTerms>>[number];
 export type ScheduleOptions = Awaited<ReturnType<typeof listScheduleOptions>>;
+export type { ClassSchedule, ExamSchedule, AcademicTerm } from "@/generated/prisma";
 

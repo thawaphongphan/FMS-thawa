@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   Newspaper,
@@ -33,29 +34,29 @@ export default async function PortalHomePage() {
 
   const portalModules = [
     {
-      title: locale === "th" ? "หลักสูตรการศึกษา" : "Academic Programs",
-      desc: locale === "th" ? "ระดับปริญญาตรี ปริญญาโท และปริญญาเอก ในสาขา AI และซอฟต์แวร์" : "Undergraduate & Graduate programs in AI and Software",
+      title: t("portal.services.programs.title"),
+      desc: t("portal.services.programs.desc"),
       icon: BookOpen,
       href: "/curriculum",
       color: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
     },
     {
-      title: locale === "th" ? "ตารางเรียนและตารางสอบ" : "Class & Exam Schedule",
-      desc: locale === "th" ? "ค้นหาตารางเรียน ตารางสอบประจำภาคการศึกษาแบบเรียลไทม์" : "Search real-time weekly class timetables and exam schedules",
+      title: t("portal.services.schedules.title"),
+      desc: t("portal.services.schedules.desc"),
       icon: Calendar,
       href: "/schedule",
       color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
     },
     {
-      title: locale === "th" ? "เครือข่ายศิษย์เก่า" : "Alumni Network",
-      desc: locale === "th" ? "ทำเนียบศิษย์เก่าดีเด่น อัปเดตข้อมูลการทำงานและสร้างเครือข่าย" : "Alumni hall of fame, career tracking, and professional network",
+      title: t("portal.services.alumni.title"),
+      desc: t("portal.services.alumni.desc"),
       icon: Users,
       href: "/alumni",
       color: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
     },
     {
-      title: locale === "th" ? "สถิตินิสิตและข้อมูลเชิงลึก" : "Student Analytics",
-      desc: locale === "th" ? "แดชบอร์ดสรุปสถิตินิสิต สัดส่วนประชากรศาสตร์ และอัตราการได้งาน" : "Interactive demographic stats, enrollment trends, and metrics",
+      title: t("portal.services.stats.title"),
+      desc: t("portal.services.stats.desc"),
       icon: BarChart3,
       href: "/statistics",
       color: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
@@ -68,39 +69,35 @@ export default async function PortalHomePage() {
       <section className="relative overflow-hidden border-b border-border/50 bg-gradient-to-b from-primary/5 via-background to-background py-20 md:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary mb-6 animate-pulse">
-            <span>✨ {locale === "th" ? "เปิดรับสมัครนักศึกษาใหม่ ปีการศึกษา 2569" : "Admissions Open for AY 2026"}</span>
+            <span>✨ {t("portal.hero.badge")}</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
-            {locale === "th"
-              ? "ศูนย์กลางการเรียนรู้และนวัตกรรมดิจิทัลแห่งอนาคต"
-              : "Empowering Next-Gen Digital Innovation & Technology"}
+            {t("portal.hero.title")}
           </h1>
 
           <p className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            {locale === "th"
-              ? "พัฒนาทักษะด้านปัญญาประดิษฐ์ วิศวกรรมซอฟต์แวร์ และวิทยาการข้อมูล ด้วยมาตรฐานระดับสากลและงานวิจัยที่ตอบโจทย์สังคม"
-              : "Fostering excellence in Artificial Intelligence, Software Engineering, and Data Science through world-class curricula and research."}
+            {t("portal.hero.subtitle")}
           </p>
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Link href="/news">
               <Button size="lg" className="gap-2 shadow-md">
                 <Newspaper className="h-4 w-4" />
-                {locale === "th" ? "ติดตามข่าวประชาสัมพันธ์" : "Latest Announcements"}
+                {t("portal.hero.announcements")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
             <Link href="/staff">
               <Button size="lg" variant="outline" className="gap-2">
                 <GraduationCap className="h-4 w-4" />
-                {locale === "th" ? "ทำเนียบคณาจารย์" : "Meet Our Faculty"}
+                {t("portal.hero.faculty")}
               </Button>
             </Link>
             <Link href="/mock-hero">
               <Button size="lg" variant="secondary" className="gap-2 border border-primary/30 hover:border-primary/60 bg-gradient-to-r from-amber-500/10 via-primary/10 to-purple-500/10">
                 <span className="text-amber-500">✨</span>
-                {locale === "th" ? "สัมผัส Cinematic Hero (ASME)" : "Try Cinematic Hero (ASME)"}
+                {t("portal.hero.cinematic")}
               </Button>
             </Link>
           </div>
@@ -109,19 +106,19 @@ export default async function PortalHomePage() {
           <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto border-t border-border/60 pt-10">
             <div>
               <div className="text-3xl font-bold text-primary">1,200+</div>
-              <div className="text-xs text-muted-foreground mt-1">{locale === "th" ? "นิสิตในสังกัด" : "Enrolled Students"}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.students")}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-primary">3</div>
-              <div className="text-xs text-muted-foreground mt-1">{locale === "th" ? "ภาควิชาเชี่ยวชาญ" : "Departments"}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.departments")}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-primary">98.5%</div>
-              <div className="text-xs text-muted-foreground mt-1">{locale === "th" ? "อัตราการมีงานทำ" : "Employment Rate"}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.employmentRate")}</div>
             </div>
             <div>
               <div className="text-3xl font-bold text-primary">50+</div>
-              <div className="text-xs text-muted-foreground mt-1">{locale === "th" ? "ผลงานวิจัยระดับสากล" : "Intl. Publications"}</div>
+              <div className="text-xs text-muted-foreground mt-1">{t("portal.stats.publications")}</div>
             </div>
           </div>
         </div>
@@ -131,10 +128,10 @@ export default async function PortalHomePage() {
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-10">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            {locale === "th" ? "บริการสำหรับนิสิตและบุคคลทั่วไป" : "Faculty Services & Portals"}
+            {t("portal.services.title")}
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {locale === "th" ? "เข้าถึงระบบข้อมูลสำคัญของคณะได้อย่างสะดวกรวดเร็ว" : "Quick access to essential faculty resources and services"}
+            {t("portal.services.subtitle")}
           </p>
         </div>
 
@@ -172,7 +169,7 @@ export default async function PortalHomePage() {
           </div>
           <Link href="/news">
             <Button variant="ghost" size="sm" className="gap-1 text-primary">
-              {locale === "th" ? "ดูข่าวทั้งหมด" : "View All"}
+              {t("portal.news.viewAll")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -192,10 +189,12 @@ export default async function PortalHomePage() {
                 {/* Cover Image */}
                 <div className="relative aspect-video w-full overflow-hidden bg-muted">
                   {article.coverImageUrl ? (
-                    <img
+                    <Image
                       src={article.coverImageUrl}
                       alt={title}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      unoptimized
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">
@@ -257,7 +256,7 @@ export default async function PortalHomePage() {
         <div className="flex items-end justify-between mb-8 border-b border-border/40 pb-4">
           <div>
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-              {locale === "th" ? "ผู้บริหารและคณาจารย์ประจำคณะ" : "Faculty Leadership"}
+              {t("portal.staff.title")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               {t("staff.subtitle")}
@@ -265,7 +264,7 @@ export default async function PortalHomePage() {
           </div>
           <Link href="/staff">
             <Button variant="ghost" size="sm" className="gap-1 text-primary">
-              {locale === "th" ? "ดูทำเนียบทั้งหมด" : "Full Directory"}
+              {t("portal.staff.viewAll")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
@@ -284,10 +283,12 @@ export default async function PortalHomePage() {
               >
                 <div className="relative mx-auto h-28 w-28 overflow-hidden rounded-full border-2 border-primary/20 shadow-sm mb-4">
                   {staff.avatarUrl ? (
-                    <img
+                    <Image
                       src={staff.avatarUrl}
                       alt={fullName}
-                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                      fill
+                      unoptimized
+                      className="object-cover transition-transform group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground text-2xl font-bold">

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, CalendarDays, Eye, User, Pin } from "lucide-react";
 import { getLocale, getT } from "@/i18n/server";
 import { formatDate } from "@/shared/lib/format";
@@ -89,11 +90,16 @@ export default async function NewsDetailPage({
       {/* Cover Image */}
       {article.coverImageUrl && (
         <div className="overflow-hidden rounded-2xl border border-border/60 shadow-md">
-          <img
-            src={article.coverImageUrl}
-            alt={title}
-            className="w-full h-auto max-h-[500px] object-cover"
-          />
+          <div className="relative w-full aspect-video max-h-[500px]">
+            <Image
+              src={article.coverImageUrl}
+              alt={title}
+              fill
+              unoptimized
+              className="object-cover"
+              priority
+            />
+          </div>
         </div>
       )}
 

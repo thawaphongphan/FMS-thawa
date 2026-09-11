@@ -162,3 +162,5 @@ export const MESSAGES: Dictionary = {
   "me.saveOk": { th: "บันทึกโปรไฟล์แล้ว", en: "Profile saved" },
   "me.passwordTitle": { th: "เปลี่ยนรหัสผ่าน", en: "Change password" },
 };
+
+export const messages = MESSAGES;

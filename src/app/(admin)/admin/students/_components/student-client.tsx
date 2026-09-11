@@ -121,7 +121,7 @@ export function StudentClient({ initialStudents, options, canManage }: StudentCl
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.studentId || !formData.firstNameTh || !formData.lastNameTh || !formData.curriculumId) {
-      toast.error(locale === "th" ? "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" : "Please fill in all required fields");
+      toast.error(t("common.requiredFields"));
       return;
     }
 

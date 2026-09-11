@@ -84,7 +84,7 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.titleTh || !formData.titleEn || !formData.slug) {
-      toast.error(locale === "th" ? "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" : "Please fill in all required fields");
+      toast.error(t("common.requiredFields"));
       return;
     }
 

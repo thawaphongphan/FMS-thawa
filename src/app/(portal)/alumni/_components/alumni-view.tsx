@@ -3,6 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import { toast } from "sonner";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   GraduationCap,
@@ -206,9 +207,12 @@ export function AlumniView({
                   <div className="flex items-start gap-4">
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border-2 border-primary/20 bg-muted">
                       {item.avatarUrl ? (
-                        <img
+                        <Image
                           src={item.avatarUrl}
                           alt={item.firstNameTh}
+                          width={56}
+                          height={56}
+                          unoptimized
                           className="h-full w-full object-cover"
                         />
                       ) : (

@@ -44,3 +44,5 @@ export const messages = {
   "perm.curriculum:read": { th: "ดูข้อมูลหลักสูตร", en: "View curricula" },
   "perm.curriculum:manage": { th: "จัดการหลักสูตรและรายวิชา", en: "Manage curricula & courses" },
 } as const;
+
+export const MESSAGES = messages;

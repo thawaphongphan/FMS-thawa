@@ -14,5 +14,8 @@ export type {
   ExamScheduleRow,
   AcademicTermRow,
   ScheduleOptions,
+  ClassSchedule,
+  ExamSchedule,
+  AcademicTerm,
 } from "./_internal/services";
 

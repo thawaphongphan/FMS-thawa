@@ -7,6 +7,7 @@ import { Plus, Edit2, Trash2, Search, GraduationCap, Check, X } from "lucide-rea
 import { useLocale, useT } from "@/shared/lib/i18n/client";
 import type { StaffProfileDto, DepartmentDto } from "@/features/staff";
 import { createStaffAction, updateStaffAction, deleteStaffAction } from "@/features/staff/actions";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
 interface StaffClientProps {
@@ -103,8 +104,8 @@ export function StaffClient({ initialStaff, departments, canManage }: StaffClien
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.firstNameTh || !formData.lastNameTh || !formData.email) {
-      toast.error(locale === "th" ? "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" : "Please fill in all required fields");
+    if (!formData.firstNameTh || !formData.lastNameTh || !formData.departmentId) {
+      toast.error(t("common.requiredFields"));
       return;
     }
 
@@ -297,7 +298,7 @@ export function StaffClient({ initialStaff, departments, canManage }: StaffClien
                       <div className="flex items-center gap-3">
                         <div className="h-8 w-8 rounded-full overflow-hidden bg-muted shrink-0 border">
                           {staff.avatarUrl ? (
-                            <img src={staff.avatarUrl} alt={staff.fullNameTh} className="h-full w-full object-cover" />
+                            <Image src={staff.avatarUrl} alt={staff.fullNameTh} width={32} height={32} unoptimized className="h-full w-full object-cover" />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center font-bold text-muted-foreground text-xs">
                               {staff.firstNameEn.charAt(0)}

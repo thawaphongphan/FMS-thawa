@@ -5,21 +5,20 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon, LogIn, LayoutDashboard, Menu, X, GraduationCap } from "lucide-react";
 import { useState } from "react";
-import { useLocale, useT } from "@/shared/lib/i18n/client";
+import { useT } from "@/shared/lib/i18n/client";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { useAppSession } from "@/hooks/use-session";
 import { Button } from "@/components/ui/button";
 
 export function PortalHeader() {
   const pathname = usePathname();
-  const locale = useLocale();
   const t = useT();
   const { theme, setTheme } = useTheme();
   const { user } = useAppSession();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
-    { href: "/", label: locale === "th" ? "หน้าแรก" : "Home" },
+    { href: "/", label: t("nav.home") },
     { href: "/curriculum", label: t("curriculum.nav") },
     { href: "/schedule", label: t("schedule.nav") },
     { href: "/alumni", label: t("alumni.nav") },
@@ -38,10 +37,10 @@ export function PortalHeader() {
           </div>
           <div>
             <div className="font-bold tracking-tight text-foreground text-sm sm:text-base">
-              {locale === "th" ? "คณะวิทยาการสารสนเทศ" : "Faculty of Informatics"}
+              {t("portal.brand.name")}
             </div>
             <div className="text-[11px] text-muted-foreground">
-              {locale === "th" ? "Faculty Web Platform" : "Academic & Research Excellence"}
+              {t("portal.brand.subtitle")}
             </div>
           </div>
         </Link>
@@ -85,14 +84,14 @@ export function PortalHeader() {
             <Link href="/dashboard">
               <Button size="sm" className="gap-2 shadow-sm">
                 <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden sm:inline">{locale === "th" ? "แผงควบคุม" : "Dashboard"}</span>
+                <span className="hidden sm:inline">{t("nav.dashboard")}</span>
               </Button>
             </Link>
           ) : (
             <Link href="/login">
               <Button size="sm" variant="outline" className="gap-2">
                 <LogIn className="h-4 w-4" />
-                <span className="hidden sm:inline">{locale === "th" ? "เข้าสู่ระบบ" : "Sign In"}</span>
+                <span className="hidden sm:inline">{t("auth.signIn")}</span>
               </Button>
             </Link>
           )}

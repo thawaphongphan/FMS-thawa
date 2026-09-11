@@ -236,6 +236,16 @@ export async function createStudent(tenantId: string, input: CreateStudentInput)
       phoneNumber: input.phoneNumber ?? null,
       avatarUrl: input.avatarUrl ?? null,
     },
+    include: {
+      curriculum: {
+        select: {
+          id: true,
+          programCode: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
+    },
   });
 }
 
@@ -263,6 +273,16 @@ export async function updateStudent(tenantId: string, input: UpdateStudentInput)
       email: input.email ?? null,
       phoneNumber: input.phoneNumber ?? null,
       avatarUrl: input.avatarUrl ?? null,
+    },
+    include: {
+      curriculum: {
+        select: {
+          id: true,
+          programCode: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
     },
   });
 }

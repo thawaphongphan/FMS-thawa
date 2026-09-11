@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { runAction, type ActionResult } from "@/shared/lib/result";
 import { getLocale } from "@/shared/lib/i18n/server";
 import { zodErrorMap } from "@/shared/lib/i18n/zod-locale";
-import { requirePermission } from "@/features/identity/server";
+import { requirePermission, writeAudit } from "@/features/identity/server";
 import { NEWS_P } from "../permissions";
 import { createArticleSchema, updateArticleSchema } from "./validations";
 import {
@@ -37,6 +37,14 @@ export async function createArticleAction(input: unknown): Promise<ActionResult<
     const ctx = await requirePermission(NEWS_P.newsManage);
     const parsed = createArticleSchema.parse(input, { error: zodErrorMap(await getLocale()) });
     const result = await createArticle(ctx.tenantId, ctx.userId, parsed);
+    await writeAudit({
+      tenantId: ctx.tenantId,
+      actorId: ctx.userId,
+      action: "article.create",
+      entity: "article",
+      entityId: result.id,
+      after: parsed,
+    });
     revalidatePath("/admin/news");
     revalidatePath("/news");
     revalidatePath("/(portal)/news", "page");
@@ -50,6 +58,14 @@ export async function updateArticleAction(input: unknown): Promise<ActionResult<
     const ctx = await requirePermission(NEWS_P.newsManage);
     const parsed = updateArticleSchema.parse(input, { error: zodErrorMap(await getLocale()) });
     const result = await updateArticle(ctx.tenantId, parsed);
+    await writeAudit({
+      tenantId: ctx.tenantId,
+      actorId: ctx.userId,
+      action: "article.update",
+      entity: "article",
+      entityId: result.id,
+      after: parsed,
+    });
     revalidatePath("/admin/news");
     revalidatePath("/news");
     revalidatePath("/(portal)/news", "page");
@@ -62,6 +78,13 @@ export async function deleteArticleAction(id: string): Promise<ActionResult<void
   return runAction(async () => {
     const ctx = await requirePermission(NEWS_P.newsManage);
     await deleteArticle(ctx.tenantId, id);
+    await writeAudit({
+      tenantId: ctx.tenantId,
+      actorId: ctx.userId,
+      action: "article.delete",
+      entity: "article",
+      entityId: id,
+    });
     revalidatePath("/admin/news");
     revalidatePath("/news");
     revalidatePath("/(portal)/news", "page");

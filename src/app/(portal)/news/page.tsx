@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Pin, CalendarDays, Eye, Newspaper, ArrowRight, Search } from "lucide-react";
 import { getLocale, getT } from "@/i18n/server";
 import { formatDate } from "@/shared/lib/format";
@@ -100,10 +101,12 @@ export default async function NewsPortalPage({
                 {/* Cover Image */}
                 <div className="relative aspect-video w-full overflow-hidden bg-muted">
                   {article.coverImageUrl ? (
-                    <img
+                    <Image
                       src={article.coverImageUrl}
                       alt={title}
-                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      fill
+                      unoptimized
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted text-muted-foreground">

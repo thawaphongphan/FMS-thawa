@@ -21,3 +21,5 @@ export const MESSAGES: Dictionary = {
   "perm.sample:read": { th: "ดูข้อมูลตัวอย่าง", en: "View sample items" },
   "perm.sample:manage": { th: "จัดการข้อมูลตัวอย่าง", en: "Manage sample items" },
 };
+
+export const messages = MESSAGES;

@@ -40,3 +40,5 @@ export const MESSAGES: Dictionary = {
   "perm.staff:read": { th: "ดูข้อมูลบุคลากร", en: "View faculty & staff" },
   "perm.staff:manage": { th: "จัดการข้อมูลบุคลากร", en: "Manage faculty & staff" },
 };
+
+export const messages = MESSAGES;

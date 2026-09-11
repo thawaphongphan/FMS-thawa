@@ -142,7 +142,7 @@ export function AlumniClient({ initialAlumni, options, canManage }: AlumniClient
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.studentId || !formData.firstNameTh || !formData.lastNameTh || !formData.curriculumId) {
-      toast.error(locale === "th" ? "กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน" : "Please fill in all required fields");
+      toast.error(t("common.requiredFields"));
       return;
     }
 
@@ -320,7 +320,7 @@ export function AlumniClient({ initialAlumni, options, canManage }: AlumniClient
             aria-label="Filter by employment status"
             className="rounded-lg border border-input bg-background px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
-            <option value="ALL">{locale === "th" ? "ทุกสถานะการทำงาน" : "All Statuses"}</option>
+            <option value="ALL">{t("alumni.allStatuses")}</option>
             <option value="EMPLOYED">{t("alumni.status.EMPLOYED")}</option>
             <option value="ENTREPRENEUR">{t("alumni.status.ENTREPRENEUR")}</option>
             <option value="STUDYING">{t("alumni.status.STUDYING")}</option>
@@ -339,7 +339,7 @@ export function AlumniClient({ initialAlumni, options, canManage }: AlumniClient
             }`}
           >
             <Star className={`h-3.5 w-3.5 ${onlyFeatured ? "fill-amber-500 text-amber-500" : ""}`} />
-            <span>{locale === "th" ? "ศิษย์เก่าดีเด่น" : "Spotlight"}</span>
+            <span>{t("alumni.featured")}</span>
           </button>
         </div>
       </div>

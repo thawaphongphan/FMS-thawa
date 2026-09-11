@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import NextImage from "next/image";
 import {
   Globe,
   ArrowRight,
@@ -257,9 +258,12 @@ export default function MockHeroPage() {
           /* Thai Monk Meditating with Lotus Flowers Visual & Celestial Rotating Ring */
           <div className="relative w-full h-full">
             {/* High-res cinematic meditating monk */}
-            <img
+            <NextImage
               src={monkVisual === "ring" ? "/images/monk-lotus-ring.jpg" : "/images/monk-lotus-meditation.jpg"}
               alt="พระภิกษุสงฆ์ไทยกำลังนั่งสมาธิท่ามกลางดอกบัวบงกชและวงแหวนรัศมีหมุนรอบ"
+              fill
+              priority
+              unoptimized
               className="absolute inset-0 w-full h-full object-cover animate-kenburns transition-all duration-700"
               style={{
                 "--monk-shift": `${monkOffsetY}%`,
