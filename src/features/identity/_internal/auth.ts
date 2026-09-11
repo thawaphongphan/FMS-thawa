@@ -56,8 +56,103 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       ? [Line({ clientId: env().LINE_CLIENT_ID, clientSecret: env().LINE_CLIENT_SECRET })]
       : [Line({ clientId: "line-dummy", clientSecret: "line-dummy" })]),
     Credentials({
-      credentials: { email: { type: "email" }, password: { type: "password" } },
+      credentials: {
+        email: { type: "text" },
+        password: { type: "password" },
+        simProvider: { type: "text" },
+        name: { type: "text" },
+      },
       async authorize(credentials, request) {
+        const simProvider = (credentials?.simProvider as string)?.toLowerCase();
+        if (simProvider === "google" || simProvider === "line" || simProvider === "microsoft") {
+          const rawEmail = (credentials?.email as string)?.trim().toLowerCase();
+          const email =
+            rawEmail && rawEmail.length > 0
+              ? rawEmail
+              : simProvider === "line"
+              ? "user@line.me"
+              : "user@gmail.com";
+
+          const rawName = (credentials?.name as string)?.trim();
+          const name =
+            rawName && rawName.length > 0
+              ? rawName
+              : simProvider === "line"
+              ? "LINE User"
+              : "Google User";
+
+          const user = await prisma.user.findUnique({ where: { email } });
+          if (user) {
+            if (!user.isActive) return null;
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                provider: simProvider,
+                lastLoginAt: new Date(),
+              },
+            });
+            return { id: user.id, email: user.email, name: user.name, image: user.imageUrl ?? undefined };
+          }
+
+          // ถ้าไม่มีในระบบ: สร้างเป็น User เริ่มต้นอัตโนมัติ
+          const defaultTenant =
+            (await prisma.tenant.findFirst({
+              where: { isActive: true },
+              orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "desc" }],
+              select: { id: true },
+            })) ??
+            (await prisma.tenant.findFirst({ select: { id: true } }));
+
+          if (!defaultTenant) return null;
+
+          const defaultRole =
+            (await prisma.role.findFirst({
+              where: { tenantId: defaultTenant.id, code: "VIEWER" },
+              select: { id: true },
+            })) ??
+            (await prisma.role.findFirst({
+              where: { tenantId: defaultTenant.id, isSystem: false },
+              select: { id: true },
+            }));
+
+          const created = await prisma.$transaction(async (tx) => {
+            const u = await tx.user.create({
+              data: {
+                email,
+                name,
+                provider: simProvider,
+                providerId: `sim_${simProvider}_${Date.now()}`,
+                emailVerified: true,
+                isActive: true,
+                mustChangePassword: false,
+                lastLoginAt: new Date(),
+              },
+            });
+
+            const ut = await tx.userTenant.create({
+              data: {
+                userId: u.id,
+                tenantId: defaultTenant.id,
+                isActive: true,
+              },
+            });
+
+            if (defaultRole) {
+              await tx.userRole.create({
+                data: {
+                  userTenantId: ut.id,
+                  roleId: defaultRole.id,
+                  scopeType: "ALL",
+                },
+              });
+            }
+
+            return u;
+          });
+
+          return { id: created.id, email: created.email, name: created.name, image: created.imageUrl ?? undefined };
+        }
+
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
         const { email, password } = parsed.data;

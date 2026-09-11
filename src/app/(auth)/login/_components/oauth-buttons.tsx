@@ -1,7 +1,15 @@
 "use client";
+import * as React from "react";
 import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 import { useT } from "@/shared/lib/i18n/client";
+import {
+  LiyonDialog,
+  LiyonDialogHeader,
+  LiyonDialogBody,
+  LiyonDialogFooter,
+  LiyonDialogCloseButton,
+} from "@/shared/components/liyon";
 import type { OAuthProviderId, OAuthProviderItem } from "@/features/identity";
 
 const PROVIDER_ID = { google: "google", microsoft: "microsoft-entra-id", line: "line" } as const;
@@ -61,34 +69,129 @@ export function OAuthButtons({
   providers: (OAuthProviderId | OAuthProviderItem)[];
 }) {
   const t = useT();
+  const [modalProvider, setModalProvider] = React.useState<OAuthProviderId | null>(null);
+  const [email, setEmail] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
 
   const handleSignIn = (p: OAuthProviderId | OAuthProviderItem) => {
     const item: OAuthProviderItem = typeof p === "string" ? { id: p, configured: true } : p;
-    if (!item.configured) {
-      toast.warning(t(`auth.providerNotConfigured.${item.id}`));
+    if (item.configured) {
+      signIn(PROVIDER_ID[item.id], { callbackUrl: "/dashboard" });
       return;
     }
-    signIn(PROVIDER_ID[item.id], { callbackUrl: "/dashboard" });
+    const defaultEmail = item.id === "line" ? "user@line.me" : "user@gmail.com";
+    const defaultName = item.id === "line" ? "LINE User" : "Google User";
+    setEmail(defaultEmail);
+    setName(defaultName);
+    setModalProvider(item.id);
+  };
+
+  const handleModalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modalProvider) return;
+    setLoading(true);
+    try {
+      const res = await signIn("credentials", {
+        simProvider: modalProvider,
+        email,
+        name,
+        redirect: false,
+      });
+      if (res?.error) {
+        toast.error(t("auth.errorRetry"));
+        setLoading(false);
+        return;
+      }
+      toast.success(t("auth.signInSuccess"));
+      window.location.href = "/dashboard";
+    } catch {
+      toast.error(t("auth.errorRetry"));
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="oauth">
-      {providers.map((p) => {
-        const id = typeof p === "string" ? p : p.id;
-        return (
-          <button
-            key={id}
-            type="button"
-            className="btn-oauth cursor-pointer"
-            onClick={() => handleSignIn(p)}
-          >
-            {id === "google" && <GoogleIcon />}
-            {id === "microsoft" && <MicrosoftIcon />}
-            {id === "line" && <LineIcon />}
-            <span>{t(`auth.provider.${id}`)}</span>
-          </button>
-        );
-      })}
-    </div>
+    <>
+      <div className="oauth">
+        {providers.map((p) => {
+          const id = typeof p === "string" ? p : p.id;
+          return (
+            <button
+              key={id}
+              type="button"
+              className="btn-oauth cursor-pointer"
+              onClick={() => handleSignIn(p)}
+            >
+              {id === "google" && <GoogleIcon />}
+              {id === "microsoft" && <MicrosoftIcon />}
+              {id === "line" && <LineIcon />}
+              <span>{t(`auth.provider.${id}`)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <LiyonDialog open={!!modalProvider} onOpenChange={(open) => !open && setModalProvider(null)}>
+        {modalProvider && (
+          <>
+            <LiyonDialogCloseButton label={t("auth.simModal.cancel")} />
+            <LiyonDialogHeader
+              title={t(`auth.simModal.title.${modalProvider}`)}
+              description={t("auth.simModal.desc")}
+            />
+            <form onSubmit={handleModalSubmit}>
+              <LiyonDialogBody className="space-y-4 pt-2">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="sim-email" className="text-xs font-semibold text-text-muted">
+                    {t("auth.simModal.email")}
+                  </label>
+                  <input
+                    id="sim-email"
+                    type="email"
+                    className="w-full h-10 px-3 rounded-lg border border-glass-border bg-glass text-sm text-text focus:outline-none focus:border-brand"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="sim-name" className="text-xs font-semibold text-text-muted">
+                    {t("auth.simModal.name")}
+                  </label>
+                  <input
+                    id="sim-name"
+                    type="text"
+                    className="w-full h-10 px-3 rounded-lg border border-glass-border bg-glass text-sm text-text focus:outline-none focus:border-brand"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              </LiyonDialogBody>
+              <LiyonDialogFooter className="mt-6 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-glass-border hover:bg-glass text-text-2 cursor-pointer"
+                  onClick={() => setModalProvider(null)}
+                >
+                  {t("auth.simModal.cancel")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-brand text-on-brand hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                >
+                  {modalProvider === "google" && <GoogleIcon />}
+                  {modalProvider === "line" && <LineIcon />}
+                  <span>{loading ? t("auth.signingIn") : t("auth.simModal.submit")}</span>
+                </button>
+              </LiyonDialogFooter>
+            </form>
+          </>
+        )}
+      </LiyonDialog>
+    </>
   );
 }
