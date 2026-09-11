@@ -49,12 +49,12 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
   const [characterMode, setCharacterMode] = useState<"monk" | "mainframe">("monk");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pillsVisible, setPillsVisible] = useState(false);
+  const [tilt, setTilt] = useState<{ rotateX: number; rotateY: number }>({ rotateX: 0, rotateY: 0 });
 
   const videoRef = useRef<HTMLVideoElement>(null);
-  const prevXRef = useRef<number | null>(null);
-  const targetTimeRef = useRef<number>(0);
+  const targetTimeRef = useRef<number>(1.0);
   const isSeekingRef = useRef<boolean>(false);
-  const SENSITIVITY = 0.8;
+  const seekTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Typewriter animation
   const { displayed, done } = useTypewriter(
@@ -69,49 +69,85 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
     return () => clearTimeout(timer);
   }, []);
 
-  // Mark body so portal header is hidden on this landing hero
+  // Mouse & touch scrubbing + 3D perspective tilt controller
   useEffect(() => {
-    document.body.classList.add("mainframe-hero-active");
-    return () => {
-      document.body.classList.remove("mainframe-hero-active");
-    };
-  }, []);
+    const handleMove = (clientX: number, clientY: number) => {
+      const windowW = window.innerWidth || 1;
+      const windowH = window.innerHeight || 1;
+      const normX = Math.max(0, Math.min(1, clientX / windowW));
+      const normY = Math.max(0, Math.min(1, clientY / windowH));
 
-  // Mouse scrubbing video controller
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+      // 1. Calculate 3D perspective rotation (-12deg to +12deg on Y, -8deg to +8deg on X)
+      const rotY = (normX - 0.5) * 24;
+      const rotX = -(normY - 0.5) * 16;
+      setTilt({ rotateX: rotX, rotateY: rotY });
+
+      // 2. Video Scrubbing
       const video = videoRef.current;
-      if (!video || !video.duration) return;
+      if (!video || !video.duration || Number.isNaN(video.duration)) return;
 
-      if (prevXRef.current === null) {
-        prevXRef.current = e.clientX;
-        return;
-      }
+      targetTimeRef.current = normX * video.duration;
 
-      const delta = e.clientX - prevXRef.current;
-      prevXRef.current = e.clientX;
-
-      const timeOffset = (delta / window.innerWidth) * SENSITIVITY * video.duration;
-      targetTimeRef.current = Math.max(0, Math.min(video.duration, targetTimeRef.current + timeOffset));
-
-      if (!isSeekingRef.current) {
+      if (!isSeekingRef.current && Math.abs(video.currentTime - targetTimeRef.current) > 0.02) {
         isSeekingRef.current = true;
-        video.currentTime = targetTimeRef.current;
+        try {
+          video.currentTime = targetTimeRef.current;
+        } catch {
+          isSeekingRef.current = false;
+        }
+
+        // Safety timeout to prevent seek deadlock if browser drops seeked event
+        if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
+        seekTimeoutRef.current = setTimeout(() => {
+          isSeekingRef.current = false;
+        }, 60);
       }
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      if (seekTimeoutRef.current) clearTimeout(seekTimeoutRef.current);
+    };
   }, []);
+
+  const handleLoadedMetadata = () => {
+    const video = videoRef.current;
+    if (!video || !video.duration) return;
+    const centerTime = video.duration * 0.5;
+    targetTimeRef.current = centerTime;
+    try {
+      video.currentTime = centerTime;
+    } catch {
+      // ignore
+    }
+  };
 
   const handleSeeked = () => {
+    if (seekTimeoutRef.current) {
+      clearTimeout(seekTimeoutRef.current);
+      seekTimeoutRef.current = null;
+    }
+    isSeekingRef.current = false;
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !video.duration) return;
 
-    if (Math.abs(video.currentTime - targetTimeRef.current) > 0.05) {
-      video.currentTime = targetTimeRef.current;
-    } else {
-      isSeekingRef.current = false;
+    if (Math.abs(video.currentTime - targetTimeRef.current) > 0.03) {
+      isSeekingRef.current = true;
+      try {
+        video.currentTime = targetTimeRef.current;
+      } catch {
+        isSeekingRef.current = false;
+      }
     }
   };
 
@@ -128,31 +164,40 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
       : "/videos/mainframe-cursor.mp4";
 
   return (
-    <section className="relative w-full h-screen min-h-screen overflow-hidden bg-black text-white font-[var(--font-body)] select-text">
-      {/* BACKGROUND VIDEO (mouse-scrub controlled) */}
-      <video
-        ref={videoRef}
-        key={videoSrc}
-        src={videoSrc}
-        muted
-        playsInline
-        preload="auto"
-        onSeeked={handleSeeked}
-        className="absolute inset-0 w-full h-full object-cover object-[70%_center] z-0 pointer-events-none"
-      />
+    <section className="relative w-full min-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden bg-black text-white font-[var(--font-body)] select-text flex flex-col justify-between">
+      {/* 3D BACKGROUND VIDEO CONTAINER (perspective-tilted & mouse-scrubbed) */}
+      <div
+        className="absolute inset-0 w-full h-full pointer-events-none transition-transform duration-75 ease-out"
+        style={{
+          transform: `perspective(1000px) rotateY(${tilt.rotateY}deg) rotateX(${tilt.rotateX}deg) scale(1.05)`,
+          transformOrigin: "center 45%",
+        }}
+      >
+        <video
+          ref={videoRef}
+          key={videoSrc}
+          src={videoSrc}
+          muted
+          playsInline
+          preload="auto"
+          onLoadedMetadata={handleLoadedMetadata}
+          onSeeked={handleSeeked}
+          className="absolute inset-0 w-full h-full object-cover object-[70%_center] z-0"
+        />
+      </div>
 
       {/* Subtle cinematic gradient vignette */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/40 via-transparent to-black/30 pointer-events-none" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none" />
 
-      {/* NAVBAR (fixed, z-index: 10) */}
-      <header className="fixed top-0 left-0 right-0 z-10 w-full px-5 sm:px-8 py-4 sm:py-5 flex justify-between items-center">
+      {/* NAVBAR (inside hero, z-index: 10) */}
+      <header className="relative z-10 w-full px-5 sm:px-8 py-3.5 flex justify-between items-center bg-black/20 backdrop-blur-xs border-b border-white/10">
         {/* Logo (left) */}
         <div className="flex items-center gap-3 select-none">
-          <span className="text-[21px] sm:text-[26px] tracking-tight text-white font-[var(--font-heading)]">
+          <span className="text-[20px] sm:text-[24px] tracking-tight text-white font-[var(--font-heading)]">
             Mainframe&reg;
           </span>
           <span
-            className="text-[25px] sm:text-[30px] text-white select-none tracking-[-0.02em]"
+            className="text-[24px] sm:text-[28px] text-white select-none tracking-[-0.02em]"
             aria-hidden="true"
           >
             &#10033;&#xfe0e;
@@ -160,7 +205,7 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
         </div>
 
         {/* Desktop nav links (center, hidden below md) */}
-        <nav className="hidden md:flex items-center text-[23px] text-white space-x-0 font-[var(--font-body)]">
+        <nav className="hidden md:flex items-center text-[20px] text-white space-x-0 font-[var(--font-body)]">
           <a href="#labs" className="hover:opacity-60 transition-opacity">
             Labs
           </a>
@@ -182,7 +227,7 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
         <div className="hidden md:flex items-center gap-4">
           <a
             href="#contact"
-            className="text-[23px] text-white underline underline-offset-2 hover:opacity-60 transition-opacity font-[var(--font-body)]"
+            className="text-[20px] text-white underline underline-offset-2 hover:opacity-60 transition-opacity font-[var(--font-body)]"
           >
             Get in touch
           </a>
@@ -216,7 +261,7 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
 
       {/* Mobile overlay (z-index: 9) */}
       <div
-        className={`fixed inset-0 bg-black/90 backdrop-blur-md z-[9] flex flex-col justify-center px-8 gap-8 transition-all duration-300 md:hidden ${
+        className={`fixed inset-0 bg-black/95 backdrop-blur-md z-[60] flex flex-col justify-center px-8 gap-8 transition-all duration-300 md:hidden ${
           mobileMenuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"

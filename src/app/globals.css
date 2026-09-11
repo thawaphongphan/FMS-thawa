@@ -90,6 +90,3 @@
   animation: blink 1s step-end infinite;
 }
 
-body.mainframe-hero-active header.portal-header {
-  display: none !important;
-}
