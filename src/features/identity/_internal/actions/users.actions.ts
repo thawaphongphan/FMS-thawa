@@ -6,7 +6,7 @@ import { env } from "@/shared/lib/infra/env";
 import { prisma } from "@/shared/lib/infra/prisma";
 import { P } from "../../permissions";
 import { requirePermission } from "../rbac";
-import { listUsersQuerySchema, createUserSchema, updateUserSchema, setUserActiveSchema, issuePasswordLinkSchema, requestEmailChangeSchema } from "../validations/users";
+import { listUsersQuerySchema, createUserSchema, updateUserSchema, setUserActiveSchema, deleteUserSchema, issuePasswordLinkSchema, requestEmailChangeSchema } from "../validations/users";
 import * as svc from "../services/user.service";
 
 const em = async () => ({ error: zodErrorMap(await getLocale()) });
@@ -49,6 +49,13 @@ export async function setUserActiveAction(input: unknown): Promise<ActionResult<
   return runAction(async () => {
     const ctx = await requirePermission(P.usersManage);
     await svc.setUserActive({ ...actorOf(ctx), ...setUserActiveSchema.parse(input, await em()) });
+  });
+}
+
+export async function deleteUserAction(input: unknown): Promise<ActionResult<void>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.usersManage);
+    await svc.deleteUser({ ...actorOf(ctx), ...deleteUserSchema.parse(input, await em()) });
   });
 }
 

@@ -1,5 +1,5 @@
 "use client";
-import { AlertCircle, Search, Users as UsersIcon, ChevronLeft, ChevronRight, Pencil, KeyRound, Mail, Ban, CircleCheck } from "lucide-react";
+import { AlertCircle, Search, Users as UsersIcon, ChevronLeft, ChevronRight, Pencil, KeyRound, Mail, Ban, CircleCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataTable, RowMenuItem, StatusPill, LiyonSelect, type DataTableColumn, type DataTableSelection } from "@/shared/components/liyon";
 import { useT, useLocale } from "@/shared/lib/i18n/client";
@@ -30,6 +30,7 @@ export function UsersTableCard({
   onChangeEmail,
   onSuspend,
   onActivate,
+  onDelete,
   onRetry,
 }: {
   state: "loading" | "data" | "empty" | "error";
@@ -55,6 +56,7 @@ export function UsersTableCard({
   onChangeEmail: (u: UserListItem) => void;
   onSuspend: (list: UserListItem[]) => void;
   onActivate: (u: UserListItem) => void;
+  onDelete: (list: UserListItem[]) => void;
   onRetry: () => void;
 }) {
   const t = useT();
@@ -104,9 +106,14 @@ export function UsersTableCard({
         bulkBar: {
           countLabel: (n) => t("users.selected", { n }),
           actions: (
-            <Button type="button" size="sm" variant="destructive" onClick={() => onSuspend(users.filter((u) => selected.has(u.id)))}>
-              {t("users.bulkSuspend")}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button type="button" size="sm" variant="outline" onClick={() => onSuspend(users.filter((u) => selected.has(u.id)))}>
+                {t("users.bulkSuspend")}
+              </Button>
+              <Button type="button" size="sm" variant="destructive" onClick={() => onDelete(users.filter((u) => selected.has(u.id)))}>
+                {t("users.bulkDelete")}
+              </Button>
+            </div>
           ),
           onClear: () => onSelectedChange(new Set()),
           clearLabel: t("users.clearSelection"),
@@ -134,6 +141,11 @@ export function UsersTableCard({
                   ) : (
                     <RowMenuItem icon={<CircleCheck aria-hidden="true" />} onSelect={() => onActivate(u)}>{t("users.menuActivate")}</RowMenuItem>
                   ))}
+                {u.id !== selfId && (
+                  <RowMenuItem danger icon={<Trash2 aria-hidden="true" />} onSelect={() => onDelete([u])}>
+                    {t("users.menuDelete")}
+                  </RowMenuItem>
+                )}
               </>
             )
           : undefined

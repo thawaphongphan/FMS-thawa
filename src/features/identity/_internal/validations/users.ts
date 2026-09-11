@@ -42,8 +42,10 @@ export const updateUserSchema = z.object({
 export const setUserActiveSchema = z.object({ userId: z.string().uuid(), isActive: z.boolean() });
 export const issuePasswordLinkSchema = z.object({ userId: z.string().uuid() });
 export const requestEmailChangeSchema = z.object({ userId: z.string().uuid(), newEmail: emailSchema });
+export const deleteUserSchema = z.object({ userId: z.string().uuid() });
 
 export type ListUsersQuery = z.infer<typeof listUsersQuerySchema>;
 export type RoleAssignment = z.infer<typeof roleAssignmentSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type DeleteUserInput = z.infer<typeof deleteUserSchema>;

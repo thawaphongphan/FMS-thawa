@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { prisma } from "@/shared/lib/infra/prisma";
 import { seedCore, seedUser } from "../../../../../prisma/lib/seed-core";
-import { listUsers, createUser, updateUser, setUserActive, issuePasswordSetupLink, requestEmailChange, confirmEmailChange } from "./user.service";
+import { listUsers, createUser, updateUser, setUserActive, deleteUser, issuePasswordSetupLink, requestEmailChange, confirmEmailChange } from "./user.service";
 import { consumeToken } from "../tokens";
 
 vi.mock("@/shared/lib/infra/mailer", () => ({ sendMail: vi.fn(async () => ({ delivered: false })) }));
@@ -257,5 +257,32 @@ describe("user.service — F2: มอบบทบาทที่ถือสิ�
     });
     const gained = rows.map((r) => r.permission.code).filter((c) => !staff.permissions.includes(c));
     expect(gained).toEqual([]);
+  });
+
+  it("deleteUser ลบผู้ใช้ สมาชิกภาพ และเขียน audit · ห้ามลบตัวเอง และห้ามลบ SUPER_ADMIN คนสุดท้าย", async () => {
+    const { core, adminId, tenantId } = await setup();
+    const u = await seedUser(prisma, tenantId, { email: "del@t.t", name: "To Delete", passwordHash: "x", roleIds: [core.roleIds.VIEWER] });
+
+    // ห้ามลบตัวเอง
+    await expect(deleteUser({ tenantId, actorId: adminId, isSuperAdmin: true, permissions: [], userId: adminId }))
+      .rejects.toMatchObject({ code: "forbidden", message: "cannot_delete_self" });
+
+    // ลบผู้ใช้ปกติสำเร็จ
+    await deleteUser({ tenantId, actorId: adminId, isSuperAdmin: true, permissions: [], userId: u });
+    expect(await prisma.user.findUnique({ where: { id: u } })).toBeNull();
+    expect(await prisma.userTenant.findFirst({ where: { userId: u } })).toBeNull();
+    expect(await prisma.auditLog.count({ where: { action: "user.delete", entityId: u } })).toBe(1);
+
+    // ห้ามลบ SUPER_ADMIN คนสุดท้าย
+    const admin2 = await seedUser(prisma, tenantId, { email: "a2@t.t", name: "A2", passwordHash: "x", roleIds: [core.roleIds.SUPER_ADMIN] });
+    await prisma.user.update({ where: { id: adminId }, data: { isActive: false } });
+    await expect(deleteUser({ tenantId, actorId: adminId, isSuperAdmin: true, permissions: [], userId: admin2 }))
+      .rejects.toMatchObject({ code: "forbidden", message: "last_super_admin" });
+
+    // Non-super admin ลบ super admin ไม่ได้ (super_admin_protected)
+    await prisma.user.update({ where: { id: adminId }, data: { isActive: true } });
+    const staffUser = await seedUser(prisma, tenantId, { email: "staff-del@t.t", name: "Staff", passwordHash: "x", roleIds: [core.roleIds.STAFF] });
+    await expect(deleteUser({ tenantId, actorId: staffUser, isSuperAdmin: false, permissions: ["users:manage"], userId: admin2 }))
+      .rejects.toMatchObject({ code: "forbidden", message: "super_admin_protected" });
   });
 });

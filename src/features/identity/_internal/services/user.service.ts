@@ -160,6 +160,37 @@ export async function setUserActive(input: Actor & { userId: string; isActive: b
   });
 }
 
+export async function deleteUser(input: Actor & { userId: string }) {
+  if (input.userId === input.actorId) throw errors.forbidden("cannot_delete_self");
+  await prisma.$transaction(async (tx) => {
+    const ut = await membership(input.userId, input.tenantId, tx);
+    assertCanActOnTarget(ut.userRoles, input);
+    const isSuper = ut.userRoles.some((r) => r.role.code === SUPER_ADMIN_CODE);
+    if (isSuper && (await otherActiveSuperAdmins(input.tenantId, input.userId, tx)) === 0) {
+      throw errors.forbidden("last_super_admin");
+    }
+    const before = {
+      name: ut.user.name,
+      email: ut.user.email,
+      roles: ut.userRoles.map((r) => ({ roleCode: r.role.code, scopeType: r.scopeType, scopeId: r.scopeId })),
+    };
+    const tenantCount = await tx.userTenant.count({ where: { userId: input.userId } });
+    if (tenantCount <= 1) {
+      await tx.user.delete({ where: { id: input.userId } });
+    } else {
+      await tx.userTenant.delete({ where: { id: ut.id } });
+    }
+    await writeAudit({
+      tenantId: input.tenantId,
+      actorId: input.actorId,
+      action: "user.delete",
+      entity: "user",
+      entityId: input.userId,
+      before,
+    }, tx);
+  });
+}
+
 export async function issuePasswordSetupLink(input: Actor & { userId: string }) {
   const ut = await membership(input.userId, input.tenantId, prisma);
   assertCanActOnTarget(ut.userRoles, input);

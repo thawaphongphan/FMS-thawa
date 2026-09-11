@@ -4,12 +4,13 @@ import { UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/shared/lib/i18n/client";
-import { listUsersAction, listRolesForPickerAction, createUserAction, updateUserAction, setUserActiveAction, issuePasswordLinkAction, requestEmailChangeAction } from "@/features/identity/actions";
+import { listUsersAction, listRolesForPickerAction, createUserAction, updateUserAction, setUserActiveAction, deleteUserAction, issuePasswordLinkAction, requestEmailChangeAction } from "@/features/identity/actions";
 import { UsersTableCard } from "./users-table-card";
 import { UserDialog } from "./user-dialog";
 import { LinkDialog } from "./link-dialog";
 import { ChangeEmailDialog } from "./change-email-dialog";
 import { SuspendDialog } from "./suspend-dialog";
+import { DeleteUserDialog } from "./delete-user-dialog";
 import { emptyForm, type UserForm, type UserListItem, type RolePick } from "./types";
 
 const PER_PAGE = 20;
@@ -28,7 +29,7 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, start] = useTransition();
 
-  const [dialog, setDialog] = useState<null | { kind: "create" } | { kind: "edit"; user: UserListItem } | { kind: "link"; link: string; hours: number; title: string; desc: string; mailDelivered: boolean } | { kind: "email"; user: UserListItem } | { kind: "suspend"; users: UserListItem[] }>(null);
+  const [dialog, setDialog] = useState<null | { kind: "create" } | { kind: "edit"; user: UserListItem } | { kind: "link"; link: string; hours: number; title: string; desc: string; mailDelivered: boolean } | { kind: "email"; user: UserListItem } | { kind: "suspend"; users: UserListItem[] } | { kind: "delete"; users: UserListItem[] }>(null);
   const [form, setForm] = useState<UserForm>(emptyForm());
 
   useEffect(() => { const h = setTimeout(() => { setSearch(searchInput); setPage(1); }, 300); return () => clearTimeout(h); }, [searchInput]);
@@ -55,9 +56,11 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
           ? t("users.lastSuperAdmin")
           : error.message === "super_admin_protected"
             ? t("users.superAdminProtected")
-            : error.code === "forbidden"
-              ? t("users.cannotEditSelf")
-              : fallback,
+            : error.message === "cannot_delete_self"
+              ? t("users.cannotDeleteSelf")
+              : error.code === "forbidden"
+                ? t("users.cannotEditSelf")
+                : fallback,
     );
   };
 
@@ -96,6 +99,22 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
       toast.success(isActive ? t("users.activateOk") : t("users.suspendOk"));
     });
   }
+  function deleteUsers(list: UserListItem[]) {
+    start(async () => {
+      let done = 0;
+      let firstError: { code: string; message: string } | null = null;
+      for (const u of list) {
+        const r = await deleteUserAction({ userId: u.id });
+        if (r.ok) done += 1;
+        else firstError ??= r.error;
+      }
+      setDialog(null);
+      void load();
+      if (firstError && done === 0) { fail(firstError, t("common.error")); return; }
+      if (firstError) { toast.warning(t("users.bulkPartial", { done, total: list.length })); return; }
+      toast.success(t("users.deleteOk"));
+    });
+  }
   function issueLink(user: UserListItem) {
     start(async () => {
       const r = await issuePasswordLinkAction({ userId: user.id });
@@ -130,6 +149,7 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
         onEdit={(u) => { setForm({ name: u.name, email: u.email, roleIds: u.roles.map((r) => r.id), mustChangePassword: u.mustChangePassword }); setDialog({ kind: "edit", user: u }); }}
         onIssueLink={issueLink} onChangeEmail={(u) => setDialog({ kind: "email", user: u })}
         onSuspend={(list) => setDialog({ kind: "suspend", users: list })} onActivate={(u) => toggleActive([u], true)}
+        onDelete={(list) => setDialog({ kind: "delete", users: list })}
         onRetry={load}
       />
       <UserDialog open={dialog?.kind === "create" || dialog?.kind === "edit"} mode={dialog?.kind === "edit" ? "edit" : "create"} onOpenChange={(o) => !o && setDialog(null)}
@@ -138,6 +158,7 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
       {dialog?.kind === "link" && <LinkDialog open onOpenChange={() => setDialog(null)} title={dialog.title} description={dialog.desc} link={dialog.link} mailDelivered={dialog.mailDelivered} />}
       {dialog?.kind === "email" && <ChangeEmailDialog open onOpenChange={() => setDialog(null)} user={dialog.user} isSubmitting={pending} onSubmit={(e) => submitEmail(dialog.user, e)} />}
       {dialog?.kind === "suspend" && <SuspendDialog open onOpenChange={() => setDialog(null)} users={dialog.users} isSubmitting={pending} onConfirm={() => toggleActive(dialog.users, false)} />}
+      {dialog?.kind === "delete" && <DeleteUserDialog open onOpenChange={() => setDialog(null)} users={dialog.users} isSubmitting={pending} onConfirm={() => deleteUsers(dialog.users)} />}
     </>
   );
 }
