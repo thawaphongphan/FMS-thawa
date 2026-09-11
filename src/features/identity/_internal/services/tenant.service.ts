@@ -25,8 +25,19 @@ export interface TenantSettings {
   smtp?: GmailSmtpSettings;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: unknown): id is string {
+  return typeof id === "string" && UUID_REGEX.test(id);
+}
+
 async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSettings> {
-  const t = await db.tenant.findUnique({ where: { id: tenantId } });
+  let t = isValidUuid(tenantId) ? await db.tenant.findUnique({ where: { id: tenantId } }) : null;
+  if (!t) {
+    t = await db.tenant.findFirst({
+      where: { isActive: true },
+      orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "desc" }],
+    });
+  }
   if (!t) throw errors.not_found();
   const settingsObj = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings }) || {};
   const p = settingsObj.palette;
@@ -55,7 +66,16 @@ export async function getTenantSettings(tenantId: string): Promise<TenantSetting
 
 /** ดึงการตั้งค่า Gmail SMTP สำหรับนำไปส่งอีเมลผ่าน mailer */
 export async function getTenantSmtpConfig(tenantId: string): Promise<SmtpConfig | null> {
-  const t = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true, nameTh: true } });
+  let t = isValidUuid(tenantId)
+    ? await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true, nameTh: true } })
+    : null;
+  if (!t) {
+    t = await prisma.tenant.findFirst({
+      where: { isActive: true },
+      orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "desc" }],
+      select: { settings: true, nameTh: true },
+    });
+  }
   const smtp = (t?.settings as { smtp?: GmailSmtpSettings })?.smtp;
   if (!smtp || !smtp.enabled || !smtp.user || !smtp.pass) {
     return null;
@@ -74,8 +94,21 @@ export async function getTenantSmtpConfig(tenantId: string): Promise<SmtpConfig 
 /** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette และ smtp ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    const before = await readTenantSettings(input.tenantId, tx);
-    const t = await tx.tenant.findUniqueOrThrow({ where: { id: input.tenantId }, select: { settings: true } });
+    let targetTenantId = input.tenantId;
+    const exists = isValidUuid(targetTenantId)
+      ? await tx.tenant.findUnique({ where: { id: targetTenantId }, select: { id: true } })
+      : null;
+    if (!exists) {
+      const active = await tx.tenant.findFirst({
+        where: { isActive: true },
+        orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "desc" }],
+        select: { id: true },
+      });
+      if (active) targetTenantId = active.id;
+    }
+
+    const before = await readTenantSettings(targetTenantId, tx);
+    const t = await tx.tenant.findUniqueOrThrow({ where: { id: targetTenantId }, select: { settings: true } });
     const existingSettings = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings }) || {};
 
     let newSmtp = existingSettings.smtp;
@@ -96,7 +129,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
     };
 
     await tx.tenant.update({
-      where: { id: input.tenantId },
+      where: { id: targetTenantId },
       data: {
         nameTh: input.nameTh,
         nameEn: input.nameEn,
@@ -109,12 +142,14 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       ...input,
       smtp: input.smtp ? { ...input.smtp, pass: input.smtp.pass ? "••••••••" : undefined } : undefined,
     };
-    await writeAudit({ tenantId: input.tenantId, actorId: input.actorId, action: "tenant.settings_update", entity: "tenant", entityId: input.tenantId, before, after: auditAfter }, tx);
+    await writeAudit({ tenantId: targetTenantId, actorId: input.actorId, action: "tenant.settings_update", entity: "tenant", entityId: targetTenantId, before, after: auditAfter }, tx);
   });
 }
 
 export async function getTenantPalette(tenantId: string): Promise<PaletteId> {
-  const t = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } });
+  const t = isValidUuid(tenantId)
+    ? await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } })
+    : null;
   const p = (t?.settings as { palette?: unknown } | null)?.palette;
   return isPalette(p) ? p : DEFAULT_PALETTE;
 }

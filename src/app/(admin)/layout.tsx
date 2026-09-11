@@ -6,9 +6,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth().catch(() => null);
-  const tenant = session?.tenantId
-    ? await getTenantById(session.tenantId).catch(() => getPortalTenant().catch(() => null))
-    : await getPortalTenant().catch(() => null);
+  const tenantFromSession = session?.tenantId ? await getTenantById(session.tenantId).catch(() => null) : null;
+  const tenant = tenantFromSession ?? (await getPortalTenant().catch(() => null));
 
   return (
     <AdminLayoutClient tenant={tenant}>

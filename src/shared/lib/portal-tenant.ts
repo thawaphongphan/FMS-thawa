@@ -26,7 +26,14 @@ export async function getDefaultTenantId(): Promise<string> {
   return tenant.id;
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function isValidUuid(id: unknown): id is string {
+  return typeof id === "string" && UUID_REGEX.test(id);
+}
+
 export async function getTenantById(id: string): Promise<PortalTenantInfo | null> {
+  if (!isValidUuid(id)) return null;
   return prisma.tenant.findUnique({
     where: { id },
     select: { id: true, nameTh: true, nameEn: true, logoUrl: true },
