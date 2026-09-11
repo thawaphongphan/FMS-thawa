@@ -2,8 +2,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
+import Line from "next-auth/providers/line";
 import { prisma } from "@/shared/lib/infra/prisma";
-import { env, googleOAuthConfigured, microsoftOAuthConfigured } from "@/shared/lib/infra/env";
+import { env, googleOAuthConfigured, microsoftOAuthConfigured, lineOAuthConfigured } from "@/shared/lib/infra/env";
 import { verifyPassword } from "@/shared/lib/security/password";
 import { logger } from "@/shared/lib/infra/logger";
 import { loginSchema } from "./validations/auth";
@@ -11,13 +12,14 @@ import { throttleKeys, isLoginThrottled, recordLoginFailure, resetLoginFailures 
 import { applyAuthorizationSnapshot, loadAuthorizationSnapshot } from "./revalidate";
 import { passwordHashFor, DUMMY_PASSWORD_HASH } from "./password-select";
 
-export type OAuthProviderId = "google" | "microsoft";
+export type OAuthProviderId = "google" | "microsoft" | "line";
 
 /** ปุ่ม OAuth โผล่เฉพาะเมื่อ env ครบ — ไม่ลงทะเบียน provider ที่ไม่มี credential */
 export function oauthProviderIds(): OAuthProviderId[] {
   const ids: OAuthProviderId[] = [];
   if (googleOAuthConfigured()) ids.push("google");
   if (microsoftOAuthConfigured()) ids.push("microsoft");
+  if (lineOAuthConfigured()) ids.push("line");
   return ids;
 }
 
@@ -40,6 +42,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     ...(microsoftOAuthConfigured()
       ? [MicrosoftEntraID({ clientId: env().MICROSOFT_CLIENT_ID, clientSecret: env().MICROSOFT_CLIENT_SECRET, issuer: `https://login.microsoftonline.com/${env().MICROSOFT_TENANT_ID}/v2.0` })]
       : []),
+    ...(lineOAuthConfigured() ? [Line({ clientId: env().LINE_CLIENT_ID, clientSecret: env().LINE_CLIENT_SECRET })] : []),
     Credentials({
       credentials: { email: { type: "email" }, password: { type: "password" } },
       async authorize(credentials, request) {
@@ -68,13 +71,33 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     /** OAuth: ต้องมีบัญชีอยู่ก่อน (แอดมินสร้าง) ไม่สร้างอัตโนมัติ */
     async signIn({ user, account }) {
       if (!account || account.provider === "credentials") return true;
-      const providerKey: OAuthProviderId = account.provider === "microsoft-entra-id" ? "microsoft" : "google";
-      if (!user.email) return "/login?error=NoAccount";
-      const existing = await prisma.user.findUnique({ where: { email: user.email.toLowerCase() } });
+      const providerKey: OAuthProviderId =
+        account.provider === "microsoft-entra-id"
+          ? "microsoft"
+          : account.provider === "line"
+          ? "line"
+          : "google";
+
+      // ค้นหาจาก provider + providerId หากเคยเชื่อมโยงไว้แล้ว
+      let existing = await prisma.user.findFirst({
+        where: { provider: providerKey, providerId: account.providerAccountId },
+      });
+
+      // หากยังไม่เคยเชื่อมโยง ค้นหาจาก email เพื่อผูกบัญชี
+      if (!existing && user.email) {
+        existing = await prisma.user.findUnique({ where: { email: user.email.toLowerCase() } });
+      }
+
       if (!existing || !existing.isActive) return "/login?error=NoAccount";
+
       await prisma.user.update({
         where: { id: existing.id },
-        data: { provider: providerKey, providerId: account.providerAccountId, imageUrl: user.image ?? existing.imageUrl, lastLoginAt: new Date() },
+        data: {
+          provider: providerKey,
+          providerId: account.providerAccountId,
+          imageUrl: user.image ?? existing.imageUrl,
+          lastLoginAt: new Date(),
+        },
       });
       user.id = existing.id;
       return true;

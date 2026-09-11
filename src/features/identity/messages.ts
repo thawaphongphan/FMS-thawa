@@ -21,6 +21,7 @@ export const MESSAGES: Dictionary = {
   "auth.orContinueWith": { th: "หรือเข้าสู่ระบบด้วย", en: "or continue with" },
   "auth.provider.google": { th: "เข้าสู่ระบบด้วย Google (Gmail)", en: "Sign in with Google (Gmail)" },
   "auth.provider.microsoft": { th: "เข้าสู่ระบบด้วย Microsoft", en: "Sign in with Microsoft" },
+  "auth.provider.line": { th: "เข้าสู่ระบบด้วย LINE", en: "Sign in with LINE" },
   "auth.oauthNoAccount": { th: "ไม่พบบัญชีนี้ในระบบ กรุณาติดต่อผู้ดูแล", en: "No account found for this email. Contact your administrator." },
   "auth.backToLogin": { th: "กลับไปหน้าเข้าสู่ระบบ", en: "Back to sign in" },
   "forgot.title": { th: "ลืมรหัสผ่าน", en: "Forgot password" },

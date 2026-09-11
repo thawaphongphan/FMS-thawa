@@ -6,7 +6,7 @@ import { BrandMarkIcon } from "../../_components/icons";
 import { PasswordLoginForm } from "./password-login-form";
 import { OAuthButtons } from "./oauth-buttons";
 
-export function LoginPanel({ providers }: { providers: ("google" | "microsoft")[] }) {
+export function LoginPanel({ providers }: { providers: ("google" | "microsoft" | "line")[] }) {
   const t = useT();
   const error = useSearchParams().get("error");
   return (

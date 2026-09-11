@@ -2,7 +2,7 @@
 import { signIn } from "next-auth/react";
 import { useT } from "@/shared/lib/i18n/client";
 
-const PROVIDER_ID = { google: "google", microsoft: "microsoft-entra-id" } as const;
+const PROVIDER_ID = { google: "google", microsoft: "microsoft-entra-id", line: "line" } as const;
 
 function GoogleIcon() {
   return (
@@ -38,7 +38,22 @@ function MicrosoftIcon() {
   );
 }
 
-export function OAuthButtons({ providers }: { providers: ("google" | "microsoft")[] }) {
+function LineIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" className="shrink-0">
+      <path
+        fill="#06C755"
+        d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.019 9.577.39.084.922.258 1.057.592.121.302.079.775.039 1.08l-.17 1.026c-.052.312-.246 1.22.846.665 1.09-.554 5.889-3.468 8.038-5.937C22.684 14.887 24 12.723 24 10.304Z"
+      />
+      <path
+        fill="#FFFFFF"
+        d="M6.865 13.06h-1.63a.476.476 0 0 1-.476-.475V8.583c0-.263.213-.475.476-.475h.682c.263 0 .476.212.476.475v3.526h.472c.263 0 .476.213.476.476v.475zm2.846 0h-.682a.476.476 0 0 1-.475-.475V8.583c0-.263.212-.475.475-.475h.682c.263 0 .476.212.476.475v4.002a.476.476 0 0 1-.476.475zm4.847 0h-.705a.477.477 0 0 1-.41-.234l-2.074-2.825v2.584c0 .263-.213.475-.476.475h-.682a.476.476 0 0 1-.475-.475V8.583c0-.263.212-.475.475-.475h.706c.164 0 .317.085.41.234l2.074 2.825V8.583c0-.263.212-.475.476-.475h.681c.263 0 .476.212.476.475v4.002a.476.476 0 0 1-.475.475zm3.83-3.051h-1.428v.809h1.428c.263 0 .476.213.476.476v.475a.476.476 0 0 1-.476.476h-2.11a.476.476 0 0 1-.475-.475V8.583c0-.263.212-.475.475-.475h2.11c.263 0 .476.212.476.475v.476a.476.476 0 0 1-.476.475h-1.428v.794h1.428c.263 0 .476.213.476.476v.475a.476.476 0 0 1-.476.476z"
+      />
+    </svg>
+  );
+}
+
+export function OAuthButtons({ providers }: { providers: ("google" | "microsoft" | "line")[] }) {
   const t = useT();
   return (
     <div className="oauth">
@@ -51,6 +66,7 @@ export function OAuthButtons({ providers }: { providers: ("google" | "microsoft"
         >
           {p === "google" && <GoogleIcon />}
           {p === "microsoft" && <MicrosoftIcon />}
+          {p === "line" && <LineIcon />}
           <span>{t(`auth.provider.${p}`)}</span>
         </button>
       ))}
