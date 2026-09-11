@@ -1,0 +1,82 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fms_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fms_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-vibe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vibe_secure_password}
+    ports:
+      # Expose only to localhost for management tools (e.g. DBeaver, psql)
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5443}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vibe} -d ${POSTGRES_DB:-fms_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - app-network
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    container_name: fms_migrate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vibe}:${POSTGRES_PASSWORD:-vibe_secure_password}@postgres:5432/${POSTGRES_DB:-fms_prod}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: fms_app
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vibe}:${POSTGRES_PASSWORD:-vibe_secure_password}@postgres:5432/${POSTGRES_DB:-fms_prod}?schema=public
+      AUTH_SECRET: ${AUTH_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-App <no-reply@localhost>}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT_ID: ${MICROSOFT_TENANT_ID:-common}
+    volumes:
+      # Persistent storage for uploaded media and brand assets
+      - uploads_data:/app/public/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+    name: fms_postgres_data
+  uploads_data:
+    name: fms_uploads_data
+
+networks:
+  app-network:
+    name: fms_network
+    driver: bridge

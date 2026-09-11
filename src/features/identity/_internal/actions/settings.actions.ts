@@ -36,7 +36,6 @@ export async function uploadLogoAction(formData: FormData): Promise<ActionResult
       "image/jpeg": "jpg",
       "image/png": "png",
       "image/webp": "webp",
-      "image/svg+xml": "svg",
       "image/gif": "gif",
     };
 

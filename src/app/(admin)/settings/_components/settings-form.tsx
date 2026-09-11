@@ -104,7 +104,7 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
                       className="hidden"
                       onChange={handleFileUpload}
                     />
