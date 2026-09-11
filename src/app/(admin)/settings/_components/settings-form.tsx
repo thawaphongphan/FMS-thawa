@@ -3,20 +3,36 @@ import { useState, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Upload, X, Loader2, GraduationCap } from "lucide-react";
+import { Upload, X, Loader2, GraduationCap, Mail, Send, Eye, EyeOff, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiyonCard, LiyonField, PalettePicker } from "@/shared/components/liyon";
 import { useT } from "@/shared/lib/i18n/client";
 import type { PaletteId } from "@/shared/lib/palette";
 import type { TenantSettings } from "@/features/identity";
-import { updateSettingsAction, uploadLogoAction } from "@/features/identity/actions";
+import { updateSettingsAction, uploadLogoAction, testGmailSmtpAction } from "@/features/identity/actions";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const [form, setForm] = useState({ nameTh: initial.nameTh, nameEn: initial.nameEn, logoUrl: initial.logoUrl ?? "", palette: initial.palette as PaletteId });
+  const [showPassword, setShowPassword] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
+  const [testRecipient, setTestRecipient] = useState("");
+  const hasExistingPass = Boolean(initial.smtp?.pass);
+
+  const [form, setForm] = useState({
+    nameTh: initial.nameTh,
+    nameEn: initial.nameEn,
+    logoUrl: initial.logoUrl ?? "",
+    palette: initial.palette as PaletteId,
+    smtp: {
+      enabled: initial.smtp?.enabled ?? false,
+      user: initial.smtp?.user ?? "",
+      pass: "",
+      fromName: initial.smtp?.fromName ?? "",
+    },
+  });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
 
@@ -70,6 +86,35 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
       toast.success(t("settings.saveOk"));
       router.refresh();
     });
+  }
+
+  async function handleTestEmail() {
+    if (!form.smtp.user || (!form.smtp.pass && !hasExistingPass)) {
+      toast.error(t("settings.smtpTestMissing"));
+      return;
+    }
+    if (!testRecipient) {
+      toast.error(t("settings.smtpTestMissing"));
+      return;
+    }
+    setTestingSmtp(true);
+    try {
+      const res = await testGmailSmtpAction({
+        user: form.smtp.user,
+        pass: form.smtp.pass || initial.smtp?.pass,
+        fromName: form.smtp.fromName || undefined,
+        recipientEmail: testRecipient,
+      });
+      if (!res.ok) {
+        toast.error(`${t("settings.smtpTestFail")}: ${res.error.message}`);
+        return;
+      }
+      toast.success(t("settings.smtpTestSuccess"));
+    } catch {
+      toast.error(t("settings.smtpTestFail"));
+    } finally {
+      setTestingSmtp(false);
+    }
   }
 
   return (
@@ -198,6 +243,173 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
           <PalettePicker value={form.palette} onChange={(p) => setForm({ ...form, palette: p })} label={t("settings.paletteLabel")} />
           {form.palette === "coral" && <p className="warn" role="note">{t("settings.coralWarn")}</p>}
         </LiyonCard>
+
+        {/* Gmail SMTP Configuration Card */}
+        <LiyonCard>
+          <div className="flex items-center gap-2 mb-1">
+            <Mail className="h-5 w-5 text-primary" />
+            <h2 className="mb-0">{t("settings.smtpTitle")}</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">{t("settings.smtpDesc")}</p>
+
+          <div className="space-y-4">
+            {/* Enable/Disable switch */}
+            <label className="flex items-start gap-3 p-3.5 rounded-xl border border-border/80 bg-muted/20 hover:bg-muted/30 transition-colors cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.smtp.enabled}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    smtp: { ...prev.smtp, enabled: e.target.checked },
+                  }))
+                }
+                className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary shrink-0"
+              />
+              <div className="min-w-0">
+                <span className="text-sm font-semibold text-foreground block">
+                  {t("settings.smtpEnable")}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {t("settings.smtpDesc")}
+                </span>
+              </div>
+            </label>
+
+            {form.smtp.enabled && (
+              <div className="fields space-y-4 pt-1">
+                <LiyonField
+                  label={t("settings.smtpUser")}
+                  htmlFor="s-smtp-user"
+                  error={errors["smtp.user"]?.[0]}
+                >
+                  <input
+                    id="s-smtp-user"
+                    type="email"
+                    placeholder={t("settings.smtpUserPh")}
+                    value={form.smtp.user}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        smtp: { ...prev.smtp, user: e.target.value },
+                      }))
+                    }
+                  />
+                </LiyonField>
+
+                <LiyonField
+                  label={t("settings.smtpPass")}
+                  htmlFor="s-smtp-pass"
+                  hint={hasExistingPass && !form.smtp.pass ? t("settings.smtpPassKeep") : undefined}
+                  error={errors["smtp.pass"]?.[0]}
+                >
+                  <div className="space-y-1.5">
+                    <div className="relative flex items-center">
+                      <input
+                        id="s-smtp-pass"
+                        type={showPassword ? "text" : "password"}
+                        placeholder={hasExistingPass ? "••••••••••••••••" : t("settings.smtpPassPh")}
+                        value={form.smtp.pass}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            smtp: { ...prev.smtp, pass: e.target.value },
+                          }))
+                        }
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground bg-primary/5 p-2.5 rounded-lg border border-primary/10">
+                      <span className="leading-relaxed">
+                        {t("settings.smtpPassHelp")}{" "}
+                        <a
+                          href="https://myaccount.google.com/apppasswords"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-0.5 text-primary underline font-medium hover:opacity-80"
+                        >
+                          Google App Passwords
+                          <ExternalLink className="h-3 w-3 inline" />
+                        </a>
+                      </span>
+                    </div>
+                  </div>
+                </LiyonField>
+
+                <LiyonField
+                  label={t("settings.smtpFromName")}
+                  htmlFor="s-smtp-from-name"
+                  hint={t("common.optional")}
+                  error={errors["smtp.fromName"]?.[0]}
+                >
+                  <input
+                    id="s-smtp-from-name"
+                    type="text"
+                    placeholder={t("settings.smtpFromNamePh")}
+                    value={form.smtp.fromName}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        smtp: { ...prev.smtp, fromName: e.target.value },
+                      }))
+                    }
+                  />
+                </LiyonField>
+
+                {/* Test Connection Box */}
+                <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-3 mt-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <Send className="h-3.5 w-3.5 text-primary" />
+                      {t("settings.smtpTestTitle")}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {t("settings.smtpTestDesc")}
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email"
+                      placeholder={t("settings.smtpTestRecipient")}
+                      value={testRecipient}
+                      onChange={(e) => setTestRecipient(e.target.value)}
+                      className="flex-1 text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={testingSmtp}
+                      onClick={handleTestEmail}
+                      className="gap-1.5 shrink-0"
+                    >
+                      {testingSmtp ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          <span>{t("settings.smtpTesting")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-3.5 w-3.5" />
+                          <span>{t("settings.smtpTestBtn")}</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </LiyonCard>
+
         <div className="savebar"><Button type="button" onClick={save} disabled={pending}>{t("common.save")}</Button></div>
       </div>
     </>

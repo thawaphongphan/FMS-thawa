@@ -5,13 +5,37 @@ import { getLocale } from "@/shared/lib/i18n/server";
 import { zodErrorMap } from "@/shared/lib/i18n/zod-locale";
 import { P } from "../../permissions";
 import { requirePermission } from "../rbac";
-import { updateSettingsSchema } from "../validations/settings";
+import { updateSettingsSchema, testGmailSmtpSchema } from "../validations/settings";
 import { getTenantSettings, updateTenantSettings, type TenantSettings } from "../services/tenant.service";
+import { testSmtpConnection } from "@/shared/lib/infra/mailer";
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { errors } from "@/shared/lib/errors";
+
+export async function testGmailSmtpAction(input: unknown): Promise<ActionResult<{ success: boolean }>> {
+  return runAction(async () => {
+    await requirePermission(P.settingsManage);
+    const parsed = testGmailSmtpSchema.parse(input, { error: zodErrorMap(await getLocale()) });
+    const from = parsed.fromName ? `${parsed.fromName} <${parsed.user}>` : parsed.user;
+    const res = await testSmtpConnection(
+      {
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        user: parsed.user,
+        pass: parsed.pass,
+        from,
+      },
+      parsed.recipientEmail
+    );
+    if (!res.success) {
+      throw new Error(res.error || "Failed to connect to Gmail SMTP");
+    }
+    return { success: true };
+  });
+}
 
 export async function getSettingsAction(): Promise<ActionResult<TenantSettings>> {
   return runAction(async () => getTenantSettings((await requirePermission(P.settingsManage)).tenantId));

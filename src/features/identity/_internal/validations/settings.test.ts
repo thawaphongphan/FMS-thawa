@@ -63,4 +63,34 @@ describe("settings validations", () => {
       })
     ).toThrow();
   });
+
+  it("validates valid settings with smtp config", () => {
+    const res = updateSettingsSchema.parse({
+      ...validBase,
+      smtp: {
+        enabled: true,
+        user: "test@gmail.com",
+        pass: "abcd efgh ijkl mnop",
+        fromName: "Sample College",
+      },
+    });
+    expect(res.smtp?.enabled).toBe(true);
+    expect(res.smtp?.user).toBe("test@gmail.com");
+    expect(res.smtp?.pass).toBe("abcd efgh ijkl mnop");
+    expect(res.smtp?.fromName).toBe("Sample College");
+  });
+
+  it("allows disabled smtp config with empty user", () => {
+    const res = updateSettingsSchema.parse({
+      ...validBase,
+      smtp: {
+        enabled: false,
+        user: "",
+        pass: "",
+        fromName: "",
+      },
+    });
+    expect(res.smtp?.enabled).toBe(false);
+    expect(res.smtp?.user).toBe("");
+  });
 });
