@@ -8,6 +8,7 @@ import { AdminSidebarNav } from "@/components/layout/admin-sidebar-nav";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { useSidebarStore } from "@/components/layout/sidebar-store";
 import { getActiveNavChain } from "@/components/layout/sidebar-nav";
+import { useBrandStore } from "@/components/layout/brand-store";
 import { useAppSession } from "@/hooks/use-session";
 import { useT, useLocale } from "@/shared/lib/i18n/client";
 import { localizedName } from "@/shared/lib/format";
@@ -27,6 +28,7 @@ export function AdminLayoutClient({
   const tail = useBreadcrumbTailItems();
   const { status, user, roles, permissions, isSuperAdmin } = useAppSession();
   const { collapsed, toggleCollapsed } = useSidebarStore();
+  const preview = useBrandStore((s) => s.preview);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [prev, setPrev] = useState(pathname);
   const [mounted, setMounted] = useState(false);
@@ -47,19 +49,23 @@ export function AdminLayoutClient({
     ...(hasPermission(ctx, P.settingsManage) ? [{ href: "/settings", label: t("nav.settings"), icon: <Settings className="h-4 w-4" /> }] : []),
   ];
 
-  const brandName = tenant
-    ? (locale === "th" ? tenant.nameTh : tenant.nameEn)
-    : t("app.name");
+  const effectiveNameTh = preview?.nameTh !== undefined ? preview.nameTh : (tenant?.nameTh ?? "");
+  const effectiveNameEn = preview?.nameEn !== undefined ? preview.nameEn : (tenant?.nameEn ?? "");
+  const effectiveLogoUrl = preview ? (preview.logoUrl !== undefined ? preview.logoUrl : (tenant?.logoUrl ?? null)) : (tenant?.logoUrl ?? null);
 
-  const brandTagline = tenant
-    ? (locale === "th" ? tenant.nameEn : tenant.nameTh)
-    : t("app.tagline");
+  const brandName = (locale === "th" ? effectiveNameTh : effectiveNameEn)
+    || (locale === "th" ? effectiveNameEn : effectiveNameTh)
+    || t("app.name");
+
+  const brandTagline = (locale === "th" ? effectiveNameEn : effectiveNameTh)
+    || (locale === "th" ? effectiveNameTh : effectiveNameEn)
+    || t("app.tagline");
 
   return (
     <AdminShell
       brandName={brandName}
       brandTagline={brandTagline}
-      brandLogoUrl={tenant?.logoUrl}
+      brandLogoUrl={effectiveLogoUrl}
       brandHref="/dashboard"
       breadcrumb={breadcrumb} breadcrumbLabel={t("common.breadcrumb")}
       roleLabel={roles[0] ? localizedName(roles[0], locale) : null}

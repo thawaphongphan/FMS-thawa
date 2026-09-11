@@ -19,6 +19,7 @@ import { signOut } from "next-auth/react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import { useT, useLocale } from "@/shared/lib/i18n/client";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
+import { useBrandStore } from "@/components/layout/brand-store";
 import { useAppSession } from "@/hooks/use-session";
 import { hasPermission, P } from "@/features/identity";
 import { cn } from "@/shared/lib/utils";
@@ -30,18 +31,23 @@ export function PortalHeader({ tenant }: { tenant?: PortalTenantInfo | null }) {
   const locale = useLocale();
   const { theme, setTheme } = useTheme();
   const { user, roles, permissions, isSuperAdmin, isLoading } = useAppSession();
+  const preview = useBrandStore((s) => s.preview);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const canManageSettings = hasPermission({ roles, permissions, isSuperAdmin }, P.settingsManage);
   const initials = (user?.name ?? "?").trim().charAt(0).toUpperCase() || "?";
 
-  const brandName = tenant
-    ? (locale === "th" ? tenant.nameTh : tenant.nameEn)
-    : t("portal.brand.name");
+  const effectiveNameTh = preview?.nameTh !== undefined ? preview.nameTh : (tenant?.nameTh ?? "");
+  const effectiveNameEn = preview?.nameEn !== undefined ? preview.nameEn : (tenant?.nameEn ?? "");
+  const effectiveLogoUrl = preview ? (preview.logoUrl !== undefined ? preview.logoUrl : (tenant?.logoUrl ?? null)) : (tenant?.logoUrl ?? null);
 
-  const brandSubtitle = tenant
-    ? (locale === "th" ? tenant.nameEn : tenant.nameTh)
-    : t("portal.brand.subtitle");
+  const brandName = (locale === "th" ? effectiveNameTh : effectiveNameEn)
+    || (locale === "th" ? effectiveNameEn : effectiveNameTh)
+    || (tenant ? (locale === "th" ? tenant.nameTh : tenant.nameEn) : t("portal.brand.name"));
+
+  const brandSubtitle = (locale === "th" ? effectiveNameEn : effectiveNameTh)
+    || (locale === "th" ? effectiveNameTh : effectiveNameEn)
+    || (tenant ? (locale === "th" ? tenant.nameEn : tenant.nameTh) : t("portal.brand.subtitle"));
 
   const navLinks = [
     { href: "/", label: t("nav.home") },
@@ -59,9 +65,9 @@ export function PortalHeader({ tenant }: { tenant?: PortalTenantInfo | null }) {
         {/* Brand */}
         <Link href="/" className="flex items-center gap-3 group text-foreground shrink-0">
           <div className="flex h-9 w-9 items-center justify-center rounded-[var(--r-sm)] bg-primary/10 overflow-hidden shadow-xs shrink-0 transition-transform group-hover:scale-105">
-            {tenant?.logoUrl ? (
+            {effectiveLogoUrl ? (
               <Image
-                src={tenant.logoUrl}
+                src={effectiveLogoUrl}
                 alt={brandName}
                 width={36}
                 height={36}

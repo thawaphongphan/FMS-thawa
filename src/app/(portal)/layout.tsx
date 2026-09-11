@@ -2,6 +2,8 @@ import { PortalHeader } from "./_components/portal-header";
 import { PortalFooter } from "./_components/portal-footer";
 import { getPortalTenant } from "@/shared/lib/portal-tenant";
 
+export const dynamic = "force-dynamic";
+
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const tenant = await getPortalTenant();
 

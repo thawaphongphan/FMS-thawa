@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition, useRef } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -10,6 +10,8 @@ import { useT } from "@/shared/lib/i18n/client";
 import type { PaletteId } from "@/shared/lib/palette";
 import type { TenantSettings } from "@/features/identity";
 import { updateSettingsAction, uploadLogoAction, testGmailSmtpAction } from "@/features/identity/actions";
+
+import { useBrandStore } from "@/components/layout/brand-store";
 
 export function SettingsForm({ initial }: { initial: TenantSettings }) {
   const t = useT();
@@ -35,6 +37,20 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [pending, start] = useTransition();
+
+  useEffect(() => {
+    useBrandStore.getState().setPreview({
+      nameTh: form.nameTh,
+      nameEn: form.nameEn,
+      logoUrl: form.logoUrl || null,
+    });
+  }, [form.nameTh, form.nameEn, form.logoUrl]);
+
+  useEffect(() => {
+    return () => {
+      useBrandStore.getState().resetPreview();
+    };
+  }, []);
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -81,8 +97,17 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
   function save() {
     start(async () => {
       const r = await updateSettingsAction(form);
-      if (!r.ok) { setErrors(r.error.fieldErrors ?? {}); if (!r.error.fieldErrors) toast.error(t(`error.${r.error.code}`)); return; }
+      if (!r.ok) {
+        setErrors(r.error.fieldErrors ?? {});
+        if (!r.error.fieldErrors) toast.error(t(`error.${r.error.code}`));
+        return;
+      }
       setErrors({});
+      useBrandStore.getState().setPreview({
+        nameTh: form.nameTh,
+        nameEn: form.nameEn,
+        logoUrl: form.logoUrl || null,
+      });
       toast.success(t("settings.saveOk"));
       router.refresh();
     });

@@ -1,8 +1,14 @@
-import { getPortalTenant } from "@/shared/lib/portal-tenant";
+import { auth } from "@/features/identity/server";
+import { getPortalTenant, getTenantById } from "@/shared/lib/portal-tenant";
 import { AdminLayoutClient } from "./_components/admin-layout-client";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const tenant = await getPortalTenant().catch(() => null);
+  const session = await auth().catch(() => null);
+  const tenant = session?.tenantId
+    ? await getTenantById(session.tenantId).catch(() => getPortalTenant().catch(() => null))
+    : await getPortalTenant().catch(() => null);
 
   return (
     <AdminLayoutClient tenant={tenant}>

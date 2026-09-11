@@ -25,3 +25,10 @@ export async function getDefaultTenantId(): Promise<string> {
   const tenant = await getPortalTenant();
   return tenant.id;
 }
+
+export async function getTenantById(id: string): Promise<PortalTenantInfo | null> {
+  return prisma.tenant.findUnique({
+    where: { id },
+    select: { id: true, nameTh: true, nameEn: true, logoUrl: true },
+  });
+}

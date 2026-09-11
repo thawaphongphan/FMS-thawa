@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PortalHeader } from "./portal-header";
 
+import { useBrandStore } from "@/components/layout/brand-store";
+
 let mockSessionUser: { id: string; name?: string | null; email?: string | null; image?: string | null } | null = null;
 const mockTheme = "light";
 const mockSetTheme = vi.fn();
@@ -39,6 +41,7 @@ describe("PortalHeader", () => {
   beforeEach(() => {
     mockSessionUser = null;
     mockSetTheme.mockClear();
+    useBrandStore.getState().resetPreview();
   });
 
   it("renders all portal navigation links", () => {
@@ -64,5 +67,16 @@ describe("PortalHeader", () => {
 
     expect(screen.getByText("สมชาย ทดสอบ")).toBeTruthy();
     expect(screen.getByText("ส")).toBeTruthy();
+  });
+
+  it("renders preview brand name when preview is set in brand store", () => {
+    useBrandStore.getState().setPreview({
+      nameTh: "ชื่อองค์กรที่กรอกใหม่",
+      nameEn: "New Org Name",
+      logoUrl: "/preview-logo.png",
+    });
+    render(<PortalHeader tenant={{ id: "t1", nameTh: "ชื่อเดิม", nameEn: "Old Name", logoUrl: null }} />);
+    expect(screen.getByText("ชื่อองค์กรที่กรอกใหม่")).toBeTruthy();
+    expect(screen.getByText("New Org Name")).toBeTruthy();
   });
 });
