@@ -12,15 +12,23 @@ import { throttleKeys, isLoginThrottled, recordLoginFailure, resetLoginFailures 
 import { applyAuthorizationSnapshot, loadAuthorizationSnapshot } from "./revalidate";
 import { passwordHashFor, DUMMY_PASSWORD_HASH } from "./password-select";
 
-export type OAuthProviderId = "google" | "microsoft" | "line";
+import type { OAuthProviderId, OAuthProviderItem } from "../types";
+export type { OAuthProviderId, OAuthProviderItem };
 
-/** ปุ่ม OAuth โผล่เฉพาะเมื่อ env ครบ — ไม่ลงทะเบียน provider ที่ไม่มี credential */
+/** รายการปุ่ม OAuth สำหรับหน้าเข้าสู่ระบบ — แสดงไอคอน Google และ LINE เสมอ */
+export function oauthProviderList(): OAuthProviderItem[] {
+  const list: OAuthProviderItem[] = [
+    { id: "google", configured: googleOAuthConfigured() },
+    { id: "line", configured: lineOAuthConfigured() },
+  ];
+  if (microsoftOAuthConfigured()) {
+    list.push({ id: "microsoft", configured: true });
+  }
+  return list;
+}
+
 export function oauthProviderIds(): OAuthProviderId[] {
-  const ids: OAuthProviderId[] = [];
-  if (googleOAuthConfigured()) ids.push("google");
-  if (microsoftOAuthConfigured()) ids.push("microsoft");
-  if (lineOAuthConfigured()) ids.push("line");
-  return ids;
+  return oauthProviderList().map((p) => p.id);
 }
 
 function clientIp(req: Request | undefined): string | null {
@@ -38,11 +46,15 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   pages: { signIn: "/login" },
   session: { strategy: "jwt", maxAge: 2 * 24 * 60 * 60, updateAge: 24 * 60 * 60 },
   providers: [
-    ...(googleOAuthConfigured() ? [Google({ clientId: env().GOOGLE_CLIENT_ID, clientSecret: env().GOOGLE_CLIENT_SECRET })] : []),
+    ...(googleOAuthConfigured()
+      ? [Google({ clientId: env().GOOGLE_CLIENT_ID, clientSecret: env().GOOGLE_CLIENT_SECRET })]
+      : [Google({ clientId: "google-dummy", clientSecret: "google-dummy" })]),
     ...(microsoftOAuthConfigured()
       ? [MicrosoftEntraID({ clientId: env().MICROSOFT_CLIENT_ID, clientSecret: env().MICROSOFT_CLIENT_SECRET, issuer: `https://login.microsoftonline.com/${env().MICROSOFT_TENANT_ID}/v2.0` })]
       : []),
-    ...(lineOAuthConfigured() ? [Line({ clientId: env().LINE_CLIENT_ID, clientSecret: env().LINE_CLIENT_SECRET })] : []),
+    ...(lineOAuthConfigured()
+      ? [Line({ clientId: env().LINE_CLIENT_ID, clientSecret: env().LINE_CLIENT_SECRET })]
+      : [Line({ clientId: "line-dummy", clientSecret: "line-dummy" })]),
     Credentials({
       credentials: { email: { type: "email" }, password: { type: "password" } },
       async authorize(credentials, request) {
@@ -68,7 +80,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    /** OAuth: ต้องมีบัญชีอยู่ก่อน (แอดมินสร้าง) ไม่สร้างอัตโนมัติ */
+    /** OAuth: หากไม่มีบัญชีในระบบ ให้สร้างเป็น User เริ่มต้นอัตโนมัติ */
     async signIn({ user, account }) {
       if (!account || account.provider === "credentials") return true;
       const providerKey: OAuthProviderId =
@@ -88,18 +100,98 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         existing = await prisma.user.findUnique({ where: { email: user.email.toLowerCase() } });
       }
 
-      if (!existing || !existing.isActive) return "/login?error=NoAccount";
+      if (existing) {
+        if (!existing.isActive) return "/login?error=NoAccount";
 
-      await prisma.user.update({
-        where: { id: existing.id },
-        data: {
-          provider: providerKey,
-          providerId: account.providerAccountId,
-          imageUrl: user.image ?? existing.imageUrl,
-          lastLoginAt: new Date(),
-        },
+        await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            provider: providerKey,
+            providerId: account.providerAccountId,
+            imageUrl: user.image ?? existing.imageUrl,
+            lastLoginAt: new Date(),
+          },
+        });
+        user.id = existing.id;
+        return true;
+      }
+
+      // ถ้าไม่มีในระบบ: ถือว่าเป็น User เริ่มต้น และสร้างบัญชีให้อัตโนมัติ
+      const defaultTenant =
+        (await prisma.tenant.findFirst({
+          where: { isActive: true },
+          orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "desc" }],
+          select: { id: true },
+        })) ??
+        (await prisma.tenant.findFirst({
+          select: { id: true },
+        }));
+
+      if (!defaultTenant) {
+        logger.error("OAuth sign in failed: no tenant in database");
+        return "/login?error=NoAccount";
+      }
+
+      const defaultRole =
+        (await prisma.role.findFirst({
+          where: { tenantId: defaultTenant.id, code: "VIEWER" },
+          select: { id: true },
+        })) ??
+        (await prisma.role.findFirst({
+          where: { tenantId: defaultTenant.id, isSystem: false },
+          select: { id: true },
+        }));
+
+      const finalEmail =
+        user.email && user.email.trim().length > 0
+          ? user.email.toLowerCase().trim()
+          : `${providerKey}_${account.providerAccountId}@${providerKey}.local`;
+
+      const finalName =
+        user.name?.trim() ||
+        (providerKey === "line"
+          ? "LINE User"
+          : providerKey === "google"
+          ? "Google User"
+          : "User");
+
+      const newUser = await prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            email: finalEmail,
+            name: finalName,
+            imageUrl: user.image ?? null,
+            provider: providerKey,
+            providerId: account.providerAccountId,
+            emailVerified: true,
+            isActive: true,
+            mustChangePassword: false,
+            lastLoginAt: new Date(),
+          },
+        });
+
+        const ut = await tx.userTenant.create({
+          data: {
+            userId: created.id,
+            tenantId: defaultTenant.id,
+            isActive: true,
+          },
+        });
+
+        if (defaultRole) {
+          await tx.userRole.create({
+            data: {
+              userTenantId: ut.id,
+              roleId: defaultRole.id,
+              scopeType: "ALL",
+            },
+          });
+        }
+
+        return created;
       });
-      user.id = existing.id;
+
+      user.id = newUser.id;
       return true;
     },
 

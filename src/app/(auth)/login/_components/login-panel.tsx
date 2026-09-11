@@ -3,10 +3,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useT } from "@/shared/lib/i18n/client";
 import { BrandMarkIcon } from "../../_components/icons";
+import type { OAuthProviderId, OAuthProviderItem } from "@/features/identity";
 import { PasswordLoginForm } from "./password-login-form";
 import { OAuthButtons } from "./oauth-buttons";
 
-export function LoginPanel({ providers }: { providers: ("google" | "microsoft" | "line")[] }) {
+export function LoginPanel({ providers }: { providers: (OAuthProviderId | OAuthProviderItem)[] }) {
   const t = useT();
   const error = useSearchParams().get("error");
   return (

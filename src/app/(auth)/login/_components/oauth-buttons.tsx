@@ -1,12 +1,14 @@
 "use client";
 import { signIn } from "next-auth/react";
+import { toast } from "sonner";
 import { useT } from "@/shared/lib/i18n/client";
+import type { OAuthProviderId, OAuthProviderItem } from "@/features/identity";
 
 const PROVIDER_ID = { google: "google", microsoft: "microsoft-entra-id", line: "line" } as const;
 
 function GoogleIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" className="shrink-0">
+    <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0" aria-hidden="true">
       <path
         fill="#4285F4"
         d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z"
@@ -29,7 +31,7 @@ function GoogleIcon() {
 
 function MicrosoftIcon() {
   return (
-    <svg viewBox="0 0 21 21" width="18" height="18" className="shrink-0">
+    <svg viewBox="0 0 21 21" width="18" height="18" className="shrink-0" aria-hidden="true">
       <rect x="1" y="1" width="9" height="9" fill="#f25022" />
       <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
       <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
@@ -40,7 +42,7 @@ function MicrosoftIcon() {
 
 function LineIcon() {
   return (
-    <svg viewBox="0 0 24 24" width="18" height="18" className="shrink-0">
+    <svg viewBox="0 0 24 24" width="20" height="20" className="shrink-0" aria-hidden="true">
       <path
         fill="#06C755"
         d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.019 9.577.39.084.922.258 1.057.592.121.302.079.775.039 1.08l-.17 1.026c-.052.312-.246 1.22.846.665 1.09-.554 5.889-3.468 8.038-5.937C22.684 14.887 24 12.723 24 10.304Z"
@@ -53,23 +55,40 @@ function LineIcon() {
   );
 }
 
-export function OAuthButtons({ providers }: { providers: ("google" | "microsoft" | "line")[] }) {
+export function OAuthButtons({
+  providers,
+}: {
+  providers: (OAuthProviderId | OAuthProviderItem)[];
+}) {
   const t = useT();
+
+  const handleSignIn = (p: OAuthProviderId | OAuthProviderItem) => {
+    const item: OAuthProviderItem = typeof p === "string" ? { id: p, configured: true } : p;
+    if (!item.configured) {
+      toast.warning(t(`auth.providerNotConfigured.${item.id}`));
+      return;
+    }
+    signIn(PROVIDER_ID[item.id], { callbackUrl: "/dashboard" });
+  };
+
   return (
     <div className="oauth">
-      {providers.map((p) => (
-        <button
-          key={p}
-          type="button"
-          className="btn-oauth cursor-pointer"
-          onClick={() => signIn(PROVIDER_ID[p], { callbackUrl: "/dashboard" })}
-        >
-          {p === "google" && <GoogleIcon />}
-          {p === "microsoft" && <MicrosoftIcon />}
-          {p === "line" && <LineIcon />}
-          <span>{t(`auth.provider.${p}`)}</span>
-        </button>
-      ))}
+      {providers.map((p) => {
+        const id = typeof p === "string" ? p : p.id;
+        return (
+          <button
+            key={id}
+            type="button"
+            className="btn-oauth cursor-pointer"
+            onClick={() => handleSignIn(p)}
+          >
+            {id === "google" && <GoogleIcon />}
+            {id === "microsoft" && <MicrosoftIcon />}
+            {id === "line" && <LineIcon />}
+            <span>{t(`auth.provider.${id}`)}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
