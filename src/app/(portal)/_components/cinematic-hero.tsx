@@ -45,11 +45,21 @@ export function useTypewriter(text: string, speed = 38, startDelay = 600) {
 }
 
 export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
-  // Mode: 3D Monk video (with Dhammaduta blue), Isolated 3D Monk, or Mainframe A.R.I.A
-  const [characterMode, setCharacterMode] = useState<"monk" | "isolated" | "mainframe">("monk");
+  // Mode: 3D Monk (360° Lerp isolated), Monk Video scrub, or Mainframe A.R.I.A
+  const [characterMode, setCharacterMode] = useState<"monk" | "monk_video" | "mainframe">("monk");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pillsVisible, setPillsVisible] = useState(false);
-  const [cursorXRatio, setCursorXRatio] = useState<number>(0.5);
+
+  // 360° Omnidirectional Spring & Lerp Refs (60 FPS without React re-render stutter)
+  const targetXRef = useRef<number>(0);
+  const targetYRef = useRef<number>(0);
+  const currentXRef = useRef<number>(0);
+  const currentYRef = useRef<number>(0);
+
+  const monk3DContainerRef = useRef<HTMLDivElement>(null);
+  const monkLeftLayerRef = useRef<HTMLImageElement>(null);
+  const monkCenterLayerRef = useRef<HTMLImageElement>(null);
+  const monkRightLayerRef = useRef<HTMLImageElement>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const prevXRef = useRef<number | null>(null);
@@ -70,13 +80,64 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
     return () => clearTimeout(timer);
   }, []);
 
-  // MotionSites mouse-scrubbing controller (background stays 100% static)
+  // 360° Spring Lerp 60 FPS Render Loop & Motion Controller
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      // Track normalized cursor X position for isolated 3D monk
-      const normX = Math.max(0, Math.min(1, e.clientX / (window.innerWidth || 1)));
-      setCursorXRatio(normX);
+    let animId: number;
 
+    const render3DLoop = () => {
+      // Smooth linear interpolation (Lerp) damping factor 0.08 for fluid inertia
+      currentXRef.current += (targetXRef.current - currentXRef.current) * 0.08;
+      currentYRef.current += (targetYRef.current - currentYRef.current) * 0.08;
+
+      // 360° rotation: X axis controls vertical tilt (up/down), Y axis controls horizontal turn (left/right)
+      const rotY = currentXRef.current * 26; // -26deg to +26deg
+      const rotX = -currentYRef.current * 18; // -18deg (look down) to +18deg (look up)
+      const rotZ = currentXRef.current * -2.5; // Natural subtle neck tilt
+      const transZ = 15;
+
+      // Apply 3D perspective rotation directly to isolated monk container (Background stays 100% static)
+      if (monk3DContainerRef.current) {
+        monk3DContainerRef.current.style.transform = `perspective(1000px) rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg) rotateZ(${rotZ.toFixed(2)}deg) translateZ(${transZ}px)`;
+      }
+
+      // Smooth multi-angle gaze opacity crossfade without any frame pops
+      // When turning left towards text (rotY < 0)
+      const leftWeight = rotY < 0 ? Math.min(1, Math.max(0, (-rotY - 2.5) / 12)) : 0;
+      // When turning right (rotY > 0)
+      const rightWeight = rotY > 0 ? Math.min(1, Math.max(0, (rotY - 2.5) / 12)) : 0;
+      const centerWeight = Math.max(0, 1 - leftWeight - rightWeight);
+
+      if (monkLeftLayerRef.current) {
+        monkLeftLayerRef.current.style.opacity = leftWeight.toFixed(3);
+      }
+      if (monkCenterLayerRef.current) {
+        monkCenterLayerRef.current.style.opacity = centerWeight.toFixed(3);
+      }
+      if (monkRightLayerRef.current) {
+        monkRightLayerRef.current.style.opacity = rightWeight.toFixed(3);
+      }
+
+      animId = requestAnimationFrame(render3DLoop);
+    };
+
+    animId = requestAnimationFrame(render3DLoop);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const windowW = window.innerWidth || 1;
+      const windowH = window.innerHeight || 1;
+
+      // The monk is positioned at ~72% horizontally and 42% vertically
+      const charCenterX = windowW * 0.72;
+      const charCenterY = windowH * 0.42;
+
+      // Normalized 360° vector from monk's head to cursor (-1 to +1)
+      const dx = Math.max(-1.2, Math.min(1.2, (e.clientX - charCenterX) / (windowW * 0.55)));
+      const dy = Math.max(-1.2, Math.min(1.2, (e.clientY - charCenterY) / (windowH * 0.45)));
+
+      targetXRef.current = dx;
+      targetYRef.current = dy;
+
+      // Video scrubbing for video modes
       const video = videoRef.current;
       if (!video || !video.duration || Number.isNaN(video.duration)) return;
 
@@ -103,8 +164,28 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
       }
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMouseMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY } as MouseEvent);
+      }
+    };
+
+    const handleMouseLeave = () => {
+      // Return gently to center when cursor leaves viewport
+      targetXRef.current = 0;
+      targetYRef.current = 0;
+    };
+
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    document.addEventListener("mouseleave", handleMouseLeave);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+    };
   }, []);
 
   const handleLoadedMetadata = () => {
@@ -147,18 +228,57 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
       ? "/videos/mainframe-cursor.mp4"
       : "/videos/monk-3d-cursor.mp4";
 
-  // Isolated 3D monk image based on cursor position
-  const isolatedMonkImg =
-    cursorXRatio < 0.42
-      ? "/images/monk-3d-left-isolated.png"
-      : cursorXRatio > 0.58
-      ? "/images/monk-3d-right-isolated.png"
-      : "/images/monk-3d-center-isolated.png";
-
   return (
     <section className="relative w-full min-h-[calc(100vh-4rem)] h-[calc(100vh-4rem)] overflow-hidden bg-[#051124] text-white font-[var(--font-body)] select-text flex flex-col justify-between">
-      {/* 1. BACKGROUND VIDEO (MotionSites: fixed, completely flat and static, NO screen tilt) */}
-      {characterMode !== "isolated" ? (
+      {/* 1. BACKGROUND (100% STILL & STATIC Dhammaduta Navy Blue with Ambient Radial Glow) */}
+      <div className="fixed inset-0 w-full h-full z-0 pointer-events-none bg-[#051124]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_72%_45%,rgba(5,86,202,0.32)_0%,rgba(4,14,29,0.2)_60%,transparent_85%)]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#040e1d]/90 via-transparent to-[#040e1d]/50" />
+      </div>
+
+      {/* 2. CHARACTER LAYER (ISOLATED 3D MONK WITH 360° SMOOTH LERP GAZE TRACKING) */}
+      {characterMode === "monk" ? (
+        <div className="fixed inset-0 w-full h-full z-0 pointer-events-none overflow-hidden flex items-end justify-end">
+          {/* Isolated 3D Character Container - Pivots smoothly around neck/head in 360 degrees */}
+          <div
+            ref={monk3DContainerRef}
+            className="absolute inset-0 w-full h-full select-none pointer-events-none"
+            style={{
+              transformOrigin: "72% 45%",
+              transformStyle: "preserve-3d",
+              willChange: "transform",
+            }}
+          >
+            {/* Base Layer: Center Looking Forward */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={monkCenterLayerRef}
+              src="/images/monk-3d-center-isolated.png"
+              alt="Phra Dhammaduta 3D Center"
+              className="absolute inset-0 w-full h-full object-cover object-[70%_center] pointer-events-none transition-none"
+            />
+            {/* Layer 2: Looking Left (Smooth Opacity Crossfade) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={monkLeftLayerRef}
+              src="/images/monk-3d-left-isolated.png"
+              alt="Phra Dhammaduta 3D Left"
+              className="absolute inset-0 w-full h-full object-cover object-[70%_center] pointer-events-none transition-none"
+              style={{ opacity: 0 }}
+            />
+            {/* Layer 3: Looking Right (Smooth Opacity Crossfade) */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={monkRightLayerRef}
+              src="/images/monk-3d-right-isolated.png"
+              alt="Phra Dhammaduta 3D Right"
+              className="absolute inset-0 w-full h-full object-cover object-[70%_center] pointer-events-none transition-none"
+              style={{ opacity: 0 }}
+            />
+          </div>
+        </div>
+      ) : (
+        /* Video Scrubbing Mode (Monk Video or Mainframe Original) */
         <video
           ref={videoRef}
           key={videoSrc}
@@ -170,28 +290,7 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
           onSeeked={handleSeeked}
           className="fixed inset-0 w-full h-full object-cover object-[70%_center] z-0 pointer-events-none"
         />
-      ) : (
-        /* 2. ISOLATED 3D MONK (แยกตัว 3D ออกมา บนพื้นหลังสีน้ำเงินธรรมทูตที่อยู่นิ่งสนิท 100%) */
-        <div className="fixed inset-0 w-full h-full z-0 pointer-events-none overflow-hidden flex items-end justify-end">
-          {/* Static Dhammaduta navy blue background with ambient aura */}
-          <div className="absolute inset-0 bg-[#051124]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(5,86,202,0.3)_0%,transparent_65%)]" />
-
-          {/* Isolated 3D Monk Cutout at 70% center, turning with cursor */}
-          <div className="relative z-0 w-full max-w-[850px] mr-[-5%] mb-[-2%] select-none">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={isolatedMonkImg}
-              alt="Phra Dhammaduta 3D Isolated"
-              className="w-full h-auto object-contain transition-opacity duration-150"
-            />
-          </div>
-        </div>
       )}
-
-      {/* Dhammaduta ambient blue aura & vignette */}
-      <div className="absolute inset-0 z-[1] pointer-events-none bg-[radial-gradient(circle_at_72%_45%,rgba(5,86,202,0.22)_0%,rgba(4,14,29,0.05)_60%,transparent_80%)]" />
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-[#040e1d]/90 via-transparent to-[#040e1d]/50 pointer-events-none" />
 
       {/* NAVBAR (inside hero, z-index: 10) */}
       <header className="relative z-10 w-full px-5 sm:px-8 py-3.5 flex justify-between items-center bg-black/20 backdrop-blur-xs border-b border-white/10">
@@ -315,11 +414,11 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
           <div
             className="pointer-events-none select-none mb-5 sm:mb-6 text-[clamp(18px,4vw,26px)] leading-[1.3] font-normal text-white [filter:blur(4px)]"
           >
-            Hey there, meet {characterMode === "monk" ? "Phra Dhammaduta" : "A.R.I.A"},
+            Hey there, meet {characterMode === "mainframe" ? "A.R.I.A" : "Phra Dhammaduta"},
             <br />
-            {characterMode === "monk"
-              ? "Dhammaduta's Mindful 3D Cursor Tracking Agent"
-              : "Mainframe's Adaptive Response Interface Agent"}
+            {characterMode === "mainframe"
+              ? "Mainframe's Adaptive Response Interface Agent"
+              : "Dhammaduta's Mindful 3D Cursor Tracking Agent"}
           </div>
 
           {/* 2. Typewriter text */}
@@ -388,20 +487,9 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
         </div>
       </div>
 
-      {/* 3D Character Mode Switcher (พระธรรมทูต 3D vs แยก 3D vs Mainframe Original) */}
+      {/* 3D Character Mode Switcher (พระธรรมทูต 3D vs วิดีโอต้นฉบับ vs Mainframe Original) */}
       <div className="absolute bottom-4 right-4 z-20 flex items-center gap-1.5 sm:gap-2 bg-black/60 backdrop-blur-md px-3 py-2 rounded-full border border-white/20 text-xs text-white">
         <span className="text-white/60 hidden sm:inline">โหมด 3D:</span>
-        <button
-          type="button"
-          onClick={() => setCharacterMode("isolated")}
-          className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
-            characterMode === "isolated"
-              ? "bg-cyan-500 text-black font-semibold shadow-md"
-              : "text-white/80 hover:text-white hover:bg-white/10"
-          }`}
-        >
-          ✨ พระธรรมทูต (แยก 3D)
-        </button>
         <button
           type="button"
           onClick={() => setCharacterMode("monk")}
@@ -412,6 +500,17 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
           }`}
         >
           🙏 พระธรรมทูต 3D
+        </button>
+        <button
+          type="button"
+          onClick={() => setCharacterMode("monk_video")}
+          className={`px-3 py-1 rounded-full transition-all cursor-pointer ${
+            characterMode === "monk_video"
+              ? "bg-blue-500 text-white font-semibold shadow-md"
+              : "text-white/80 hover:text-white hover:bg-white/10"
+          }`}
+        >
+          🎬 วิดีโอต้นฉบับ
         </button>
         <button
           type="button"
@@ -428,3 +527,4 @@ export function CinematicHero({ stats: _stats }: CinematicHeroProps = {}) {
     </section>
   );
 }
+
