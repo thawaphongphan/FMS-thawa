@@ -95,6 +95,10 @@ export const MESSAGES: Dictionary = {
   "portal.footer.contact": { th: "ติดต่อเรา", en: "Contact Us" },
   "portal.footer.address": { th: "อาคารเทคโนโลยีสารสนเทศ 123 ถ.มหาวิทยาลัย", en: "IT Complex, 123 University Rd." },
   "portal.footer.hours": { th: "วันจันทร์ - ศุกร์: 08:30 - 16:30 น.", en: "Mon - Fri: 08:30 - 16:30" },
+  "portal.footer.openMap": { th: "เปิดแผนที่ Google Maps", en: "Open in Google Maps" },
+  "portal.footer.visitWebsite": { th: "เยี่ยมชมเว็บไซต์", en: "Visit Website" },
+  "portal.footer.line": { th: "LINE Official", en: "LINE Official" },
+  "portal.footer.facebook": { th: "Facebook", en: "Facebook" },
   "portal.footer.rights": { th: "สงวนลิขสิทธิ์ทั้งหมด", en: "All rights reserved." },
   "portal.footer.staffConsole": { th: "ระบบจัดการสำหรับเจ้าหน้าที่", en: "Staff Console" },
 };

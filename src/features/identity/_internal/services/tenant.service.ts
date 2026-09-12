@@ -16,6 +16,10 @@ export interface GmailSmtpSettings {
   [key: string]: unknown;
 }
 
+import type { PortalContactInfo } from "@/shared/lib/portal-tenant";
+
+export type TenantContactSettings = PortalContactInfo;
+
 export interface TenantSettings {
   code: string;
   nameTh: string;
@@ -23,6 +27,7 @@ export interface TenantSettings {
   logoUrl: string | null;
   palette: PaletteId;
   smtp?: GmailSmtpSettings;
+  contact?: TenantContactSettings;
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,7 +44,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     });
   }
   if (!t) throw errors.not_found();
-  const settingsObj = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings }) || {};
+  const settingsObj = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings; contact?: TenantContactSettings }) || {};
   const p = settingsObj.palette;
   const smtp = settingsObj.smtp
     ? {
@@ -47,6 +52,20 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
         user: settingsObj.smtp.user || "",
         pass: settingsObj.smtp.pass || "",
         fromName: settingsObj.smtp.fromName || "",
+      }
+    : undefined;
+  const contact = settingsObj.contact
+    ? {
+        addressTh: settingsObj.contact.addressTh || "",
+        addressEn: settingsObj.contact.addressEn || "",
+        phone: settingsObj.contact.phone || "",
+        email: settingsObj.contact.email || "",
+        hoursTh: settingsObj.contact.hoursTh || "",
+        hoursEn: settingsObj.contact.hoursEn || "",
+        facebook: settingsObj.contact.facebook || "",
+        line: settingsObj.contact.line || "",
+        mapsUrl: settingsObj.contact.mapsUrl || "",
+        website: settingsObj.contact.website || "",
       }
     : undefined;
 
@@ -57,6 +76,7 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     logoUrl: t.logoUrl,
     palette: isPalette(p) ? p : DEFAULT_PALETTE,
     smtp,
+    contact,
   };
 }
 
@@ -109,7 +129,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
 
     const before = await readTenantSettings(targetTenantId, tx);
     const t = await tx.tenant.findUniqueOrThrow({ where: { id: targetTenantId }, select: { settings: true } });
-    const existingSettings = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings }) || {};
+    const existingSettings = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings; contact?: TenantContactSettings }) || {};
 
     let newSmtp = existingSettings.smtp;
     if (input.smtp) {
@@ -122,10 +142,27 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       };
     }
 
+    let newContact = existingSettings.contact;
+    if (input.contact) {
+      newContact = {
+        addressTh: input.contact.addressTh || "",
+        addressEn: input.contact.addressEn || "",
+        phone: input.contact.phone || "",
+        email: input.contact.email || "",
+        hoursTh: input.contact.hoursTh || "",
+        hoursEn: input.contact.hoursEn || "",
+        facebook: input.contact.facebook || "",
+        line: input.contact.line || "",
+        mapsUrl: input.contact.mapsUrl || "",
+        website: input.contact.website || "",
+      };
+    }
+
     const updatedSettings = {
       ...existingSettings,
       palette: input.palette,
       ...(newSmtp ? { smtp: newSmtp } : {}),
+      ...(newContact ? { contact: newContact } : {}),
     };
 
     await tx.tenant.update({
@@ -134,7 +171,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
         nameTh: input.nameTh,
         nameEn: input.nameEn,
         logoUrl: input.logoUrl || null,
-        settings: updatedSettings as Prisma.InputJsonObject,
+        settings: updatedSettings as unknown as Prisma.InputJsonObject,
       },
     });
 

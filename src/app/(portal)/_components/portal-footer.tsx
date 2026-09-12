@@ -9,6 +9,8 @@ import {
   Lock,
   ArrowRight,
   ChevronRight,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { getLocale, getT } from "@/i18n/server";
 import type { PortalTenantInfo } from "@/shared/lib/portal-tenant";
@@ -113,24 +115,96 @@ export async function PortalFooter({ tenant }: { tenant?: PortalTenantInfo | nul
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand2)] inline-block" />
               {t("portal.footer.contact")}
             </h3>
-            <ul className="space-y-3 text-sm text-[var(--ink-band-muted)]">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="h-4 w-4 mt-0.5 text-[var(--brand-light)] shrink-0" />
-                <span className="leading-relaxed">{t("portal.footer.address")}</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
-                <span>02-123-4500</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
-                <span className="truncate">contact@informatics.university.ac.th</span>
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Clock className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
-                <span>{t("portal.footer.hours")}</span>
-              </li>
-            </ul>
+            {(() => {
+              const contact = tenant?.contact;
+              const address = locale === "th"
+                ? (contact?.addressTh || t("portal.footer.address"))
+                : (contact?.addressEn || contact?.addressTh || t("portal.footer.address"));
+              const phone = contact?.phone || "02-123-4500";
+              const email = contact?.email || "contact@informatics.university.ac.th";
+              const hours = locale === "th"
+                ? (contact?.hoursTh || t("portal.footer.hours"))
+                : (contact?.hoursEn || contact?.hoursTh || t("portal.footer.hours"));
+
+              return (
+                <>
+                  <ul className="space-y-3 text-sm text-[var(--ink-band-muted)]">
+                    <li className="flex items-start gap-2.5">
+                      <MapPin className="h-4 w-4 mt-0.5 text-[var(--brand-light)] shrink-0" />
+                      <div className="leading-relaxed">
+                        <span>{address}</span>
+                        {contact?.mapsUrl && (
+                          <a
+                            href={contact.mapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block text-xs text-[var(--brand-light)] hover:underline mt-1 inline-flex items-center gap-1"
+                          >
+                            <span>{t("portal.footer.openMap")}</span>
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                      </div>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Phone className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
+                      <a href={`tel:${phone.replace(/[^0-9+]/g, "")}`} className="hover:text-[var(--ink-band-text)] transition-colors">
+                        {phone}
+                      </a>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Mail className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
+                      <a href={`mailto:${email}`} className="truncate hover:text-[var(--ink-band-text)] transition-colors">
+                        {email}
+                      </a>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <Clock className="h-4 w-4 text-[var(--brand-light)] shrink-0" />
+                      <span>{hours}</span>
+                    </li>
+                  </ul>
+
+                  {/* Social channels (Facebook, LINE, Website) */}
+                  {(contact?.facebook || contact?.line || contact?.website) && (
+                    <div className="pt-1 flex flex-wrap items-center gap-2">
+                      {contact.facebook && (
+                        <a
+                          href={contact.facebook.startsWith("http") ? contact.facebook : `https://facebook.com/${contact.facebook}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--ink-band-muted)] hover:text-[var(--ink-band-text)] transition-colors"
+                        >
+                          <span>📘</span>
+                          <span>{t("portal.footer.facebook")}</span>
+                        </a>
+                      )}
+                      {contact.line && (
+                        <a
+                          href={contact.line.startsWith("http") ? contact.line : `https://line.me/R/ti/p/${contact.line.replace(/^@/, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--ink-band-muted)] hover:text-[var(--ink-band-text)] transition-colors"
+                        >
+                          <span>💬</span>
+                          <span>{t("portal.footer.line")}</span>
+                        </a>
+                      )}
+                      {contact.website && (
+                        <a
+                          href={contact.website.startsWith("http") ? contact.website : `https://${contact.website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs bg-white/5 hover:bg-white/10 border border-white/10 text-[var(--ink-band-muted)] hover:text-[var(--ink-band-text)] transition-colors"
+                        >
+                          <Globe className="h-3 w-3 text-[var(--brand-light)]" />
+                          <span>{t("portal.footer.visitWebsite")}</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
 
             {/* Staff console portal link */}
             <Link

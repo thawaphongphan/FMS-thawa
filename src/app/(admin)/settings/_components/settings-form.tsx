@@ -3,7 +3,7 @@ import { useState, useEffect, useTransition, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
-import { Upload, X, Loader2, GraduationCap, Mail, Send, Eye, EyeOff, ExternalLink } from "lucide-react";
+import { Upload, X, Loader2, GraduationCap, Mail, Send, Eye, EyeOff, ExternalLink, Phone, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LiyonCard, LiyonField, PalettePicker } from "@/shared/components/liyon";
 import { useT } from "@/shared/lib/i18n/client";
@@ -33,6 +33,18 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
       user: initial.smtp?.user ?? "",
       pass: "",
       fromName: initial.smtp?.fromName ?? "",
+    },
+    contact: {
+      addressTh: initial.contact?.addressTh ?? "",
+      addressEn: initial.contact?.addressEn ?? "",
+      phone: initial.contact?.phone ?? "",
+      email: initial.contact?.email ?? "",
+      hoursTh: initial.contact?.hoursTh ?? "",
+      hoursEn: initial.contact?.hoursEn ?? "",
+      facebook: initial.contact?.facebook ?? "",
+      line: initial.contact?.line ?? "",
+      mapsUrl: initial.contact?.mapsUrl ?? "",
+      website: initial.contact?.website ?? "",
     },
   });
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -432,6 +444,132 @@ export function SettingsForm({ initial }: { initial: TenantSettings }) {
                 </div>
               </div>
             )}
+          </div>
+        </LiyonCard>
+
+        {/* Contact Information Card */}
+        <LiyonCard>
+          <div className="flex items-center gap-2 mb-1">
+            <Phone className="h-5 w-5 text-primary" />
+            <h2 className="mb-0">{t("settings.contactTitle")}</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">{t("settings.contactDesc")}</p>
+
+          <div className="fields space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <LiyonField label={t("settings.contactPhone")} htmlFor="s-contact-phone" error={errors["contact.phone"]?.[0]}>
+                <input
+                  id="s-contact-phone"
+                  type="text"
+                  placeholder={t("settings.contactPhonePh")}
+                  value={form.contact.phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, phone: e.target.value } }))}
+                />
+              </LiyonField>
+
+              <LiyonField label={t("settings.contactEmail")} htmlFor="s-contact-email" error={errors["contact.email"]?.[0]}>
+                <input
+                  id="s-contact-email"
+                  type="email"
+                  placeholder={t("settings.contactEmailPh")}
+                  value={form.contact.email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, email: e.target.value } }))}
+                />
+              </LiyonField>
+            </div>
+
+            <LiyonField label={t("settings.contactAddressTh")} htmlFor="s-contact-address-th" error={errors["contact.addressTh"]?.[0]}>
+              <textarea
+                id="s-contact-address-th"
+                rows={2}
+                className="w-full resize-none p-2 rounded-lg border border-border bg-background text-sm"
+                placeholder={t("portal.footer.address")}
+                value={form.contact.addressTh}
+                onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, addressTh: e.target.value } }))}
+              />
+            </LiyonField>
+
+            <LiyonField label={t("settings.contactAddressEn")} htmlFor="s-contact-address-en" error={errors["contact.addressEn"]?.[0]}>
+              <textarea
+                id="s-contact-address-en"
+                rows={2}
+                className="w-full resize-none p-2 rounded-lg border border-border bg-background text-sm"
+                placeholder="IT Complex, 123 University Rd."
+                value={form.contact.addressEn}
+                onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, addressEn: e.target.value } }))}
+              />
+            </LiyonField>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <LiyonField label={t("settings.contactHoursTh")} htmlFor="s-contact-hours-th" error={errors["contact.hoursTh"]?.[0]}>
+                <input
+                  id="s-contact-hours-th"
+                  type="text"
+                  placeholder={t("settings.contactHoursThPh")}
+                  value={form.contact.hoursTh}
+                  onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, hoursTh: e.target.value } }))}
+                />
+              </LiyonField>
+
+              <LiyonField label={t("settings.contactHoursEn")} htmlFor="s-contact-hours-en" error={errors["contact.hoursEn"]?.[0]}>
+                <input
+                  id="s-contact-hours-en"
+                  type="text"
+                  placeholder={t("settings.contactHoursEnPh")}
+                  value={form.contact.hoursEn}
+                  onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, hoursEn: e.target.value } }))}
+                />
+              </LiyonField>
+            </div>
+
+            <div className="pt-2 border-t border-border/40">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                <Globe className="h-4 w-4 text-primary" />
+                {t("settings.contactSocialTitle")}
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <LiyonField label={t("settings.contactFacebook")} htmlFor="s-contact-fb" error={errors["contact.facebook"]?.[0]}>
+                  <input
+                    id="s-contact-fb"
+                    type="text"
+                    placeholder={t("settings.contactFacebookPh")}
+                    value={form.contact.facebook}
+                    onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, facebook: e.target.value } }))}
+                  />
+                </LiyonField>
+
+                <LiyonField label={t("settings.contactLine")} htmlFor="s-contact-line" error={errors["contact.line"]?.[0]}>
+                  <input
+                    id="s-contact-line"
+                    type="text"
+                    placeholder={t("settings.contactLinePh")}
+                    value={form.contact.line}
+                    onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, line: e.target.value } }))}
+                  />
+                </LiyonField>
+
+                <LiyonField label={t("settings.contactMapsUrl")} htmlFor="s-contact-maps" error={errors["contact.mapsUrl"]?.[0]}>
+                  <input
+                    id="s-contact-maps"
+                    type="text"
+                    placeholder={t("settings.contactMapsUrlPh")}
+                    value={form.contact.mapsUrl}
+                    onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, mapsUrl: e.target.value } }))}
+                  />
+                </LiyonField>
+
+                <LiyonField label={t("settings.contactWebsite")} htmlFor="s-contact-web" error={errors["contact.website"]?.[0]}>
+                  <input
+                    id="s-contact-web"
+                    type="text"
+                    placeholder={t("settings.contactWebsitePh")}
+                    value={form.contact.website}
+                    onChange={(e) => setForm((prev) => ({ ...prev, contact: { ...prev.contact, website: e.target.value } }))}
+                  />
+                </LiyonField>
+              </div>
+            </div>
           </div>
         </LiyonCard>
 

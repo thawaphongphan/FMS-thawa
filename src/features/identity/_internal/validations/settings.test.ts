@@ -93,4 +93,48 @@ describe("settings validations", () => {
     expect(res.smtp?.enabled).toBe(false);
     expect(res.smtp?.user).toBe("");
   });
+
+  it("validates valid contact settings", () => {
+    const res = updateSettingsSchema.parse({
+      ...validBase,
+      contact: {
+        phone: "02-999-8888",
+        email: "info@faculty.ac.th",
+        addressTh: "123 อาคารเรียนรวม",
+        addressEn: "123 Main Building",
+        hoursTh: "จันทร์-ศุกร์ 8.30-16.30",
+        hoursEn: "Mon-Fri 8:30-16:30",
+        facebook: "https://facebook.com/faculty",
+        line: "@faculty",
+        mapsUrl: "https://maps.app.goo.gl/xyz",
+        website: "https://faculty.ac.th",
+      },
+    });
+    expect(res.contact?.phone).toBe("02-999-8888");
+    expect(res.contact?.email).toBe("info@faculty.ac.th");
+    expect(res.contact?.addressTh).toBe("123 อาคารเรียนรวม");
+    expect(res.contact?.mapsUrl).toBe("https://maps.app.goo.gl/xyz");
+  });
+
+  it("fails when contact email is invalid", () => {
+    expect(() =>
+      updateSettingsSchema.parse({
+        ...validBase,
+        contact: {
+          email: "not-an-email",
+        },
+      })
+    ).toThrow();
+  });
+
+  it("fails when contact mapsUrl or website is not a valid URL", () => {
+    expect(() =>
+      updateSettingsSchema.parse({
+        ...validBase,
+        contact: {
+          mapsUrl: "not-a-url",
+        },
+      })
+    ).toThrow();
+  });
 });

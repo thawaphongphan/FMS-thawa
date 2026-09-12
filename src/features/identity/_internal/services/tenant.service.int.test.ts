@@ -26,6 +26,39 @@ describe("tenant.service", () => {
     const t = await prisma.tenant.findUniqueOrThrow({ where: { id: core.tenantId } });
     expect(t.settings).toMatchObject({ palette: "green", futureFeature: { foo: "bar" } });
   });
+
+  it("updateTenantSettings บันทึกและอ่าน contact ได้ถูกต้อง", async () => {
+    const core = await seedCore(prisma, { tenantCode: "T_CONTACT", nameTh: "ท_ติดต่อ", nameEn: "T_Contact" });
+    const adminId = await seedUser(prisma, core.tenantId, { email: "ac@t.t", name: "AC", passwordHash: "x", roleIds: [core.roleIds.SUPER_ADMIN] });
+    await updateTenantSettings({
+      tenantId: core.tenantId,
+      actorId: adminId,
+      nameTh: "ท_ติดต่อ",
+      nameEn: "T_Contact",
+      logoUrl: "",
+      palette: "blue",
+      contact: {
+        phone: "02-123-4567",
+        email: "test@contact.com",
+        addressTh: "123 ถ.สุขุมวิท",
+        addressEn: "123 Sukhumvit Rd.",
+        hoursTh: "จ-ศ 9:00-17:00",
+        hoursEn: "Mon-Fri 9:00-17:00",
+        facebook: "pagefb",
+        line: "@linetest",
+        mapsUrl: "https://maps.app.goo.gl/test",
+        website: "https://example.com",
+      },
+    });
+
+    const s = await getTenantSettings(core.tenantId);
+    expect(s.contact).toMatchObject({
+      phone: "02-123-4567",
+      email: "test@contact.com",
+      addressTh: "123 ถ.สุขุมวิท",
+      mapsUrl: "https://maps.app.goo.gl/test",
+    });
+  });
 });
 
 /**
