@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { UserPlus } from "lucide-react";
+import Link from "next/link";
+import { UserPlus, Download, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/shared/lib/i18n/client";
@@ -134,7 +135,39 @@ export function UsersClient({ canManage, selfId }: { canManage: boolean; selfId:
     <>
       <header className="ph hr">
         <h1 className="sr-only">{t("users.title")}</h1>
-        {canManage && <div className="acts ml-auto"><Button type="button" onClick={() => { setForm(emptyForm()); setDialog({ kind: "create" }); }}><UserPlus aria-hidden="true" />{t("users.addBtn")}</Button></div>}
+        <div className="acts ml-auto flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              window.open("/api/users/export", "_blank");
+            }}
+            title={t("users.exportCsv")}
+          >
+            <Download aria-hidden="true" />
+            {t("users.exportCsv")}
+          </Button>
+          {canManage && (
+            <>
+              <Button type="button" variant="outline" asChild>
+                <Link href="/users/import">
+                  <Upload aria-hidden="true" />
+                  {t("users.importCsv")}
+                </Link>
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setForm(emptyForm());
+                  setDialog({ kind: "create" });
+                }}
+              >
+                <UserPlus aria-hidden="true" />
+                {t("users.addBtn")}
+              </Button>
+            </>
+          )}
+        </div>
       </header>
       {/* canManage ของตารางปิดชั่วคราวขณะมี dialog เปิดอยู่ — คอลัมน์เลือกแถว/เมนูสามจุดของพื้นหลังหายไปด้วย
           (นอกจาก UX ที่ถูกต้องอยู่แล้ว คือพื้นหลังไม่ควรโต้ตอบได้ขณะมี dialog บัง — Radix aria-hides พื้นหลังให้

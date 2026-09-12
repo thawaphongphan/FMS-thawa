@@ -79,3 +79,28 @@ export async function requestEmailChangeAction(input: unknown): Promise<ActionRe
 export async function confirmEmailChangeAction(token: string): Promise<ActionResult<boolean>> {
   return runAction(() => svc.confirmEmailChange(token));
 }
+
+export async function validateUsersImportAction(
+  rows: { name: string; email: string; role?: string; password?: string }[]
+): Promise<ActionResult<import("../services/user-import.service").ValidatedUserRow[]>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.usersManage);
+    const { validateUsersCsv } = await import("../services/user-import.service");
+    return validateUsersCsv(ctx.tenantId, ctx.isSuperAdmin, rows);
+  });
+}
+
+export async function executeUsersImportAction(
+  rows: { name: string; email: string; roleId: string; password?: string }[]
+): Promise<ActionResult<{ successCount: number; failedCount: number }>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.usersManage);
+    const { importUsersBatch } = await import("../services/user-import.service");
+    const result = await importUsersBatch(actorOf(ctx), rows);
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/users");
+    revalidatePath("/(admin)/users", "page");
+    return result;
+  });
+}
+
