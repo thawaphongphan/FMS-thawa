@@ -3,11 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Pin, Search, Newspaper, Check, X } from "lucide-react";
+import { Plus, Edit2, Trash2, Pin, Search, Newspaper, Check, X, Sparkles, Loader2 } from "lucide-react";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
 import { formatDate } from "@/shared/lib/format";
 import type { ArticleDto, ArticleCategoryDto } from "@/features/news";
-import { createArticleAction, updateArticleAction, deleteArticleAction } from "@/features/news/actions";
+import {
+  createArticleAction,
+  updateArticleAction,
+  deleteArticleAction,
+  translateNewsWithAiAction,
+} from "@/features/news/actions";
 import { Button } from "@/components/ui/button";
 
 interface NewsClientProps {
@@ -29,6 +34,7 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
   // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState<ArticleDto | null>(null);
+  const [translating, setTranslating] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -79,6 +85,43 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
       pinned: article.pinned,
     });
     setDialogOpen(true);
+  };
+
+  const handleAiTranslate = async () => {
+    if (!formData.titleTh.trim() || !formData.contentTh.trim()) {
+      toast.error(t("news.aiTranslateRequireThai"));
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      const res = await translateNewsWithAiAction({
+        titleTh: formData.titleTh,
+        summaryTh: formData.summaryTh.trim() || undefined,
+        contentTh: formData.contentTh,
+      });
+
+      if (res.ok) {
+        setFormData((prev) => ({
+          ...prev,
+          titleEn: res.data.titleEn,
+          summaryEn: res.data.summaryEn,
+          contentEn: res.data.contentEn,
+          slug: res.data.slug || prev.slug,
+        }));
+        toast.success(t("news.aiTranslateSuccess"));
+      } else {
+        if (res.error.message === "gemini_not_configured") {
+          toast.error(t("news.aiTranslateNoApiKey"));
+        } else {
+          toast.error(res.error.message || t("news.aiTranslateFailed"));
+        }
+      }
+    } catch {
+      toast.error(t("news.aiTranslateFailed"));
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -349,6 +392,38 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
             </div>
 
             <form onSubmit={handleSave} className="space-y-4 text-xs">
+              {/* Gemini AI Assistant Banner */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl bg-primary/5 border border-primary/20 p-3">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-4 w-4 text-primary shrink-0" />
+                  <span>
+                    {locale === "th"
+                      ? "กรอกหัวข้อและเนื้อหาภาษาไทย แล้วกดปุ่มเพื่อให้ Gemini AI แปลเป็นภาษาอังกฤษให้อัตโนมัติ"
+                      : "Fill in Thai title & content, then click to auto-translate into English using Gemini AI"}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleAiTranslate}
+                  disabled={translating || pending}
+                  className="h-8 gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary shrink-0 font-medium cursor-pointer"
+                >
+                  {translating ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>{t("news.aiTranslating")}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      <span>{t("news.aiTranslate")}</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Title TH */}
               <div>
                 <label className="block font-semibold text-foreground mb-1">
@@ -371,9 +446,20 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
 
               {/* Title EN */}
               <div>
-                <label className="block font-semibold text-foreground mb-1">
-                  {t("news.titleEn")} *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-foreground">
+                    {t("news.titleEn")} *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAiTranslate}
+                    disabled={translating || pending}
+                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline disabled:opacity-50 cursor-pointer"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {translating ? t("news.aiTranslating") : t("news.aiTranslate")}
+                  </button>
+                </div>
                 <input
                   type="text"
                   required
@@ -471,6 +557,19 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
                   rows={2}
                   value={formData.summaryTh}
                   onChange={(e) => setFormData({ ...formData, summaryTh: e.target.value })}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              {/* Summary EN */}
+              <div>
+                <label className="block font-semibold text-foreground mb-1">
+                  {t("news.summaryEn")}
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.summaryEn}
+                  onChange={(e) => setFormData({ ...formData, summaryEn: e.target.value })}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>

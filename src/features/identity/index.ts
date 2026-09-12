@@ -9,5 +9,5 @@ export { loginSchema, forgotPasswordSchema, resetPasswordSchema, changePasswordS
 export type { UserListItem } from "./_internal/services/user.service";
 export type { RoleItem } from "./_internal/services/role.service";
 export { deleteUserSchema, type RoleAssignment, type ListUsersQuery, type DeleteUserInput } from "./_internal/validations/users";
-export type { TenantSettings, GmailSmtpSettings, TenantContactSettings } from "./_internal/services/tenant.service";
+export type { TenantSettings, GmailSmtpSettings, TenantContactSettings, GeminiSettings } from "./_internal/services/tenant.service";
 export type { OAuthProviderId, OAuthProviderItem } from "./types";

@@ -5,4 +5,5 @@ export {
   updateArticleAction,
   deleteArticleAction,
   trackArticleViewAction,
+  translateNewsWithAiAction,
 } from "./_internal/actions";

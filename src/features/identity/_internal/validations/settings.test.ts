@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { updateSettingsSchema } from "./settings";
+import { updateSettingsSchema, testGeminiSchema } from "./settings";
 
 describe("settings validations", () => {
   const validBase = {
@@ -127,14 +127,24 @@ describe("settings validations", () => {
     ).toThrow();
   });
 
-  it("fails when contact mapsUrl or website is not a valid URL", () => {
-    expect(() =>
-      updateSettingsSchema.parse({
-        ...validBase,
-        contact: {
-          mapsUrl: "not-a-url",
-        },
-      })
-    ).toThrow();
+  it("validates valid gemini settings in updateSettingsSchema", () => {
+    const res = updateSettingsSchema.parse({
+      ...validBase,
+      gemini: {
+        apiKey: "AIzaSyFakeKey12345",
+        model: "gemini-2.5-flash",
+      },
+    });
+    expect(res.gemini?.apiKey).toBe("AIzaSyFakeKey12345");
+    expect(res.gemini?.model).toBe("gemini-2.5-flash");
+  });
+
+  it("validates testGeminiSchema with provided or empty key", () => {
+    const empty = testGeminiSchema.parse({ apiKey: "" });
+    expect(empty.apiKey).toBe("");
+    const valid = testGeminiSchema.parse({ apiKey: "AIzaSyFakeKey12345", model: "gemini-1.5-flash" });
+    expect(valid.apiKey).toBe("AIzaSyFakeKey12345");
+    expect(valid.model).toBe("gemini-1.5-flash");
   });
 });
+

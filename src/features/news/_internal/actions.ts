@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { runAction, type ActionResult } from "@/shared/lib/result";
+import { errors, isAppError } from "@/shared/lib/errors";
 import { getLocale } from "@/shared/lib/i18n/server";
 import { zodErrorMap } from "@/shared/lib/i18n/zod-locale";
-import { requirePermission, writeAudit } from "@/features/identity/server";
+import { requirePermission, writeAudit, getTenantGeminiConfig } from "@/features/identity/server";
+import { translateNewsWithGemini, type TranslateNewsOutput } from "@/shared/lib/infra/gemini";
 import { NEWS_P } from "../permissions";
-import { createArticleSchema, updateArticleSchema } from "./validations";
+import { createArticleSchema, updateArticleSchema, translateNewsSchema } from "./validations";
 import {
   createArticle,
   updateArticle,
@@ -17,6 +19,29 @@ import {
   type ArticleDto,
   type ArticleCategoryDto,
 } from "./services";
+
+export async function translateNewsWithAiAction(input: unknown): Promise<ActionResult<TranslateNewsOutput>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(NEWS_P.newsManage);
+    const parsed = translateNewsSchema.parse(input, { error: zodErrorMap(await getLocale()) });
+    const geminiConfig = await getTenantGeminiConfig(ctx.tenantId);
+    if (!geminiConfig || !geminiConfig.apiKey) {
+      throw errors.conflict("gemini_not_configured");
+    }
+    try {
+      const result = await translateNewsWithGemini(geminiConfig, {
+        titleTh: parsed.titleTh,
+        summaryTh: parsed.summaryTh ?? undefined,
+        contentTh: parsed.contentTh,
+      });
+      return result;
+    } catch (err) {
+      if (isAppError(err)) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw errors.conflict(msg);
+    }
+  });
+}
 
 export async function adminListArticlesAction(): Promise<ActionResult<ArticleDto[]>> {
   return runAction(async () => {

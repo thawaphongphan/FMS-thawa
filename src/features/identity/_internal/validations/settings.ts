@@ -54,6 +54,16 @@ export const contactSettingsSchema = z.object({
     .default(""),
 });
 
+export const geminiSettingsSchema = z.object({
+  apiKey: z.string().trim().default(""),
+  model: z.string().trim().max(100).default("gemini-2.5-flash"),
+});
+
+export const testGeminiSchema = z.object({
+  apiKey: z.string().trim().optional(),
+  model: z.string().trim().max(100).optional(),
+});
+
 export const updateSettingsSchema = z.object({
   nameTh: z.string().trim().min(1).max(255),
   nameEn: z.string().trim().min(1).max(255),
@@ -68,6 +78,7 @@ export const updateSettingsSchema = z.object({
   palette: z.enum(PALETTE_IDS),
   smtp: gmailSmtpSchema.optional(),
   contact: contactSettingsSchema.optional(),
+  gemini: geminiSettingsSchema.optional(),
 });
 export const updateProfileSchema = z.object({ name: z.string().trim().min(1).max(255), locale: z.enum(["th", "en"]) });
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -75,3 +86,5 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 export type GmailSmtpInput = z.infer<typeof gmailSmtpSchema>;
 export type TestGmailSmtpInput = z.infer<typeof testGmailSmtpSchema>;
 export type ContactSettingsInput = z.infer<typeof contactSettingsSchema>;
+export type GeminiSettingsInput = z.infer<typeof geminiSettingsSchema>;
+export type TestGeminiInput = z.infer<typeof testGeminiSchema>;

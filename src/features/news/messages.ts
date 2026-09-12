@@ -38,6 +38,12 @@ export const MESSAGES: Dictionary = {
   "perm.news:read": { th: "ดูข่าวประชาสัมพันธ์", en: "View news articles" },
   "perm.news:manage": { th: "สร้างและแก้ไขข่าวประชาสัมพันธ์", en: "Create & edit news articles" },
   "perm.news:publish": { th: "อนุมัติและเผยแพร่ข่าว", en: "Approve & publish news" },
+  "news.aiTranslate": { th: "แปลเป็นภาษาอังกฤษด้วย Gemini AI", en: "Translate to English with Gemini AI" },
+  "news.aiTranslating": { th: "กำลังแปลด้วย Gemini AI...", en: "Translating with Gemini AI..." },
+  "news.aiTranslateSuccess": { th: "แปลเนื้อหาข่าวเป็นภาษาอังกฤษเรียบร้อยแล้ว", en: "Translated news to English successfully" },
+  "news.aiTranslateRequireThai": { th: "กรุณากรอกหัวข้อข่าวและเนื้อหาข่าวภาษาไทยก่อนใช้งาน AI", en: "Please fill Thai title and content before using AI translation" },
+  "news.aiTranslateNoApiKey": { th: "ยังไม่ได้ตั้งค่า Gemini API Key กรุณาตั้งค่าในหน้าการตั้งค่าระบบก่อนใช้งาน", en: "Gemini API Key is not configured. Please set it in Settings first" },
+  "news.aiTranslateFailed": { th: "เกิดข้อผิดพลาดในการแปลด้วย AI", en: "Failed to translate with AI" },
 };
 
 export const messages = MESSAGES;

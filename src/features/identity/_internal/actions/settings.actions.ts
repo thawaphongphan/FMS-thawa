@@ -5,14 +5,42 @@ import { getLocale } from "@/shared/lib/i18n/server";
 import { zodErrorMap } from "@/shared/lib/i18n/zod-locale";
 import { P } from "../../permissions";
 import { requirePermission } from "../rbac";
-import { updateSettingsSchema, testGmailSmtpSchema } from "../validations/settings";
-import { getTenantSettings, updateTenantSettings, type TenantSettings } from "../services/tenant.service";
+import { updateSettingsSchema, testGmailSmtpSchema, testGeminiSchema } from "../validations/settings";
+import { getTenantSettings, updateTenantSettings, getTenantGeminiConfig, type TenantSettings } from "../services/tenant.service";
 import { testSmtpConnection } from "@/shared/lib/infra/mailer";
+import { testGeminiConnection } from "@/shared/lib/infra/gemini";
 
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import { errors } from "@/shared/lib/errors";
+
+export async function testGeminiAction(input: unknown): Promise<ActionResult<{ success: boolean }>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(P.settingsManage);
+    const parsed = testGeminiSchema.parse(input, { error: zodErrorMap(await getLocale()) });
+    let apiKey = parsed.apiKey?.trim();
+    let model = parsed.model?.trim() || "gemini-2.5-flash";
+
+    if (!apiKey) {
+      const current = await getTenantGeminiConfig(ctx.tenantId);
+      if (current?.apiKey) {
+        apiKey = current.apiKey;
+        model = current.model || model;
+      }
+    }
+
+    if (!apiKey) {
+      throw new Error("api_key_required");
+    }
+
+    const res = await testGeminiConnection({ apiKey, model });
+    if (!res.success) {
+      throw new Error(res.error || "Failed to connect to Gemini API");
+    }
+    return { success: true };
+  });
+}
 
 export async function testGmailSmtpAction(input: unknown): Promise<ActionResult<{ success: boolean }>> {
   return runAction(async () => {

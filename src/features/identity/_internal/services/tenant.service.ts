@@ -7,12 +7,19 @@ import { writeAudit } from "../audit";
 import type { UpdateSettingsInput } from "../validations/settings";
 
 import type { SmtpConfig } from "@/shared/lib/infra/mailer";
+import type { GeminiConfig } from "@/shared/lib/infra/gemini";
 
 export interface GmailSmtpSettings {
   enabled: boolean;
   user: string;
   pass: string;
   fromName: string;
+  [key: string]: unknown;
+}
+
+export interface GeminiSettings {
+  apiKey: string;
+  model: string;
   [key: string]: unknown;
 }
 
@@ -28,6 +35,7 @@ export interface TenantSettings {
   palette: PaletteId;
   smtp?: GmailSmtpSettings;
   contact?: TenantContactSettings;
+  gemini?: GeminiSettings;
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -44,7 +52,12 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     });
   }
   if (!t) throw errors.not_found();
-  const settingsObj = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings; contact?: TenantContactSettings }) || {};
+  const settingsObj = (t.settings as {
+    palette?: unknown;
+    smtp?: GmailSmtpSettings;
+    contact?: TenantContactSettings;
+    gemini?: GeminiSettings;
+  }) || {};
   const p = settingsObj.palette;
   const smtp = settingsObj.smtp
     ? {
@@ -68,6 +81,12 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
         website: settingsObj.contact.website || "",
       }
     : undefined;
+  const gemini = settingsObj.gemini
+    ? {
+        apiKey: settingsObj.gemini.apiKey || "",
+        model: settingsObj.gemini.model || "gemini-2.5-flash",
+      }
+    : undefined;
 
   return {
     code: t.code,
@@ -77,11 +96,35 @@ async function readTenantSettings(tenantId: string, db: Db): Promise<TenantSetti
     palette: isPalette(p) ? p : DEFAULT_PALETTE,
     smtp,
     contact,
+    gemini,
   };
 }
 
 export async function getTenantSettings(tenantId: string): Promise<TenantSettings> {
   return readTenantSettings(tenantId, prisma);
+}
+
+/** ดึงการตั้งค่า Gemini AI สำหรับนำไปใช้แปลเนื้อหาหรือประมวลผล AI */
+export async function getTenantGeminiConfig(tenantId: string): Promise<GeminiConfig | null> {
+  let t = isValidUuid(tenantId)
+    ? await prisma.tenant.findUnique({ where: { id: tenantId }, select: { settings: true } })
+    : null;
+  if (!t) {
+    t = await prisma.tenant.findFirst({
+      where: { isActive: true },
+      orderBy: [{ userTenants: { _count: "desc" } }, { createdAt: "desc" }],
+      select: { settings: true },
+    });
+  }
+  const gemini = (t?.settings as { gemini?: GeminiSettings } | null)?.gemini;
+  const apiKey = gemini?.apiKey?.trim() || process.env.GEMINI_API_KEY?.trim() || "";
+  if (!apiKey) {
+    return null;
+  }
+  return {
+    apiKey,
+    model: gemini?.model?.trim() || "gemini-2.5-flash",
+  };
 }
 
 /** ดึงการตั้งค่า Gmail SMTP สำหรับนำไปส่งอีเมลผ่าน mailer */
@@ -111,7 +154,7 @@ export async function getTenantSmtpConfig(tenantId: string): Promise<SmtpConfig 
   };
 }
 
-/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette และ smtp ไม่ทับทั้งก้อน */
+/** เก็บคีย์อื่น ๆ ใน settings JSON ไว้ทั้งหมด — merge palette, smtp, gemini ไม่ทับทั้งก้อน */
 export async function updateTenantSettings(input: { tenantId: string; actorId: string } & UpdateSettingsInput): Promise<void> {
   await prisma.$transaction(async (tx) => {
     let targetTenantId = input.tenantId;
@@ -129,7 +172,12 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
 
     const before = await readTenantSettings(targetTenantId, tx);
     const t = await tx.tenant.findUniqueOrThrow({ where: { id: targetTenantId }, select: { settings: true } });
-    const existingSettings = (t.settings as { palette?: unknown; smtp?: GmailSmtpSettings; contact?: TenantContactSettings }) || {};
+    const existingSettings = (t.settings as {
+      palette?: unknown;
+      smtp?: GmailSmtpSettings;
+      contact?: TenantContactSettings;
+      gemini?: GeminiSettings;
+    }) || {};
 
     let newSmtp = existingSettings.smtp;
     if (input.smtp) {
@@ -158,11 +206,21 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
       };
     }
 
+    let newGemini = existingSettings.gemini;
+    if (input.gemini) {
+      const apiKey = input.gemini.apiKey.trim() !== "" ? input.gemini.apiKey.trim() : (existingSettings.gemini?.apiKey || "");
+      newGemini = {
+        apiKey,
+        model: input.gemini.model?.trim() || existingSettings.gemini?.model || "gemini-2.5-flash",
+      };
+    }
+
     const updatedSettings = {
       ...existingSettings,
       palette: input.palette,
       ...(newSmtp ? { smtp: newSmtp } : {}),
       ...(newContact ? { contact: newContact } : {}),
+      ...(newGemini ? { gemini: newGemini } : {}),
     };
 
     await tx.tenant.update({
@@ -178,6 +236,7 @@ export async function updateTenantSettings(input: { tenantId: string; actorId: s
     const auditAfter = {
       ...input,
       smtp: input.smtp ? { ...input.smtp, pass: input.smtp.pass ? "••••••••" : undefined } : undefined,
+      gemini: input.gemini ? { ...input.gemini, apiKey: input.gemini.apiKey ? "••••••••" : undefined } : undefined,
     };
     await writeAudit({ tenantId: targetTenantId, actorId: input.actorId, action: "tenant.settings_update", entity: "tenant", entityId: targetTenantId, before, after: auditAfter }, tx);
   });
