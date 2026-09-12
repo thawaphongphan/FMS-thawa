@@ -15,6 +15,7 @@ import {
   Target,
   Briefcase,
   FileText,
+  Users,
 } from "lucide-react";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
 import type { CurriculumDto } from "@/features/curriculum";
@@ -215,6 +216,27 @@ export function CurriculumClient({
   };
 
   const handleDelete = (item: CurriculumDto) => {
+    const studentCount = item._count?.studentProfiles ?? 0;
+    const alumniCount = item._count?.alumniProfiles ?? 0;
+    const hasEnrolled = studentCount > 0 || alumniCount > 0;
+
+    if (hasEnrolled) {
+      const details: string[] = [];
+      if (studentCount > 0) {
+        details.push(locale === "th" ? `นิสิตปัจจุบัน ${studentCount} คน` : `${studentCount} current students`);
+      }
+      if (alumniCount > 0) {
+        details.push(locale === "th" ? `ศิษย์เก่า ${alumniCount} คน` : `${alumniCount} alumni`);
+      }
+
+      toast.error(
+        locale === "th"
+          ? `ไม่สามารถลบหลักสูตร "${item.nameTh}" ได้ เนื่องจากมีข้อมูล${details.join(" และ ")}สังกัดอยู่ กรุณาย้ายหรือลบข้อมูลดังกล่าวก่อน หรือเลือกปิดสถานะการเปิดสอนแทน`
+          : `Cannot delete "${item.nameEn}": ${details.join(" and ")} are enrolled. Please reassign or delete them first, or deactivate the curriculum instead.`
+      );
+      return;
+    }
+
     if (!confirm(t("curriculum.deleteConfirm"))) return;
     startTransition(async () => {
       const res = await deleteCurriculumAction(item.id);
@@ -343,7 +365,25 @@ export function CurriculumClient({
                     </td>
                     <td className="px-4 py-3">
                       <div className="font-semibold text-foreground">{item.nameTh}</div>
-                      <div className="text-xs text-muted-foreground">{item.nameEn}</div>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                        <span className="text-xs text-muted-foreground">{item.nameEn}</span>
+                        {((item._count?.studentProfiles ?? 0) > 0 || (item._count?.alumniProfiles ?? 0) > 0) && (
+                          <div className="flex items-center gap-1.5 text-[11px]">
+                            {(item._count?.studentProfiles ?? 0) > 0 && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 font-medium">
+                                <Users className="h-3 w-3" />
+                                {item._count?.studentProfiles} {t("curriculum.students")}
+                              </span>
+                            )}
+                            {(item._count?.alumniProfiles ?? 0) > 0 && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 font-medium">
+                                <Users className="h-3 w-3" />
+                                {item._count?.alumniProfiles} {t("curriculum.alumni")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       {item.department ? (
@@ -389,14 +429,32 @@ export function CurriculumClient({
                           >
                             <Edit2 className="h-4 w-4" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(item)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {(() => {
+                            const studentCount = item._count?.studentProfiles ?? 0;
+                            const alumniCount = item._count?.alumniProfiles ?? 0;
+                            const hasEnrolled = studentCount > 0 || alumniCount > 0;
+                            const tooltipText = hasEnrolled
+                              ? locale === "th"
+                                ? `ไม่สามารถลบได้เนื่องจากมีข้อมูลผูกอยู่ (นิสิต ${studentCount} คน, ศิษย์เก่า ${alumniCount} คน)`
+                                : `Cannot delete: ${studentCount} students, ${alumniCount} alumni enrolled`
+                              : t("curriculum.delete");
+
+                            return (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title={tooltipText}
+                                className={`h-8 w-8 transition-colors ${
+                                  hasEnrolled
+                                    ? "text-muted-foreground/40 hover:text-amber-600 hover:bg-amber-500/10 cursor-not-allowed"
+                                    : "text-destructive hover:bg-destructive/10"
+                                }`}
+                                onClick={() => handleDelete(item)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            );
+                          })()}
                         </div>
                       </td>
                     )}

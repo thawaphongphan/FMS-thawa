@@ -1,5 +1,6 @@
 import { prisma } from "@/shared/lib/infra/prisma";
-import type { Prisma, DegreeLevel } from "@/generated/prisma";
+import { Prisma, type DegreeLevel } from "@/generated/prisma";
+import { AppError } from "@/shared/lib/errors";
 import type { CreateCurriculumInput, UpdateCurriculumInput } from "./validations";
 
 export interface CurriculumCourseDto {
@@ -61,6 +62,12 @@ export interface CurriculumDto {
   updatedAt: Date;
   department?: CurriculumDepartmentSummary | null;
   courses?: CurriculumCourseDto[];
+  _count?: {
+    studentProfiles: number;
+    alumniProfiles: number;
+    classSchedules: number;
+    courses: number;
+  };
 }
 
 export async function listPublicCurricula(
@@ -169,6 +176,14 @@ export async function adminListCurricula(
           nameEn: true,
         },
       },
+      _count: {
+        select: {
+          studentProfiles: true,
+          alumniProfiles: true,
+          classSchedules: true,
+          courses: true,
+        },
+      },
     },
     orderBy: [
       { degreeLevel: "asc" },
@@ -176,7 +191,7 @@ export async function adminListCurricula(
       { programCode: "asc" },
     ],
   });
-  return list as CurriculumDto[];
+  return list as unknown as CurriculumDto[];
 }
 
 export async function createCurriculum(
@@ -209,9 +224,17 @@ export async function createCurriculum(
           nameEn: true,
         },
       },
+      _count: {
+        select: {
+          studentProfiles: true,
+          alumniProfiles: true,
+          classSchedules: true,
+          courses: true,
+        },
+      },
     },
   });
-  return created as CurriculumDto;
+  return created as unknown as CurriculumDto;
 }
 
 export async function updateCurriculum(
@@ -244,13 +267,48 @@ export async function updateCurriculum(
           nameEn: true,
         },
       },
+      _count: {
+        select: {
+          studentProfiles: true,
+          alumniProfiles: true,
+          classSchedules: true,
+          courses: true,
+        },
+      },
     },
   });
-  return updated as CurriculumDto;
+  return updated as unknown as CurriculumDto;
 }
 
 export async function deleteCurriculum(tenantId: string, id: string): Promise<void> {
-  await prisma.curriculum.delete({
-    where: { id, tenantId },
-  });
+  // ตรวจสอบความปลอดภัยของข้อมูล: ห้ามลบหากมีนิสิตหรือศิษย์เก่าผูกอยู่
+  const [studentCount, alumniCount] = await Promise.all([
+    prisma.studentProfile.count({ where: { tenantId, curriculumId: id } }),
+    prisma.alumniProfile.count({ where: { tenantId, curriculumId: id } }),
+  ]);
+
+  if (studentCount > 0 || alumniCount > 0) {
+    const details: string[] = [];
+    if (studentCount > 0) details.push(`นิสิตปัจจุบัน ${studentCount} คน`);
+    if (alumniCount > 0) details.push(`ศิษย์เก่า ${alumniCount} คน`);
+
+    throw new AppError(
+      "conflict",
+      `ไม่สามารถลบหลักสูตรนี้ได้ เนื่องจากมีข้อมูล${details.join(" และ ")}สังกัดอยู่ กรุณาย้ายหรือลบข้อมูลดังกล่าวก่อน หรือเลือกปิดสถานะการเปิดสอนแทน`
+    );
+  }
+
+  try {
+    await prisma.curriculum.delete({
+      where: { id, tenantId },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      throw new AppError(
+        "conflict",
+        "ไม่สามารถลบหลักสูตรนี้ได้ เนื่องจากมีข้อมูลอื่นในระบบอ้างอิงถึงหลักสูตรนี้อยู่"
+      );
+    }
+    throw error;
+  }
 }
