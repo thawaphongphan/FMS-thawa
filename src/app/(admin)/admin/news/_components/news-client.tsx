@@ -29,6 +29,11 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
   const [pending, startTransition] = useTransition();
 
   const [articles, setArticles] = useState<ArticleDto[]>(initialArticles);
+  const [prevInitial, setPrevInitial] = useState(initialArticles);
+  if (prevInitial !== initialArticles) {
+    setPrevInitial(initialArticles);
+    setArticles(initialArticles);
+  }
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
@@ -141,6 +146,9 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
           ...formData,
         });
         if (res.ok) {
+          setArticles((prev) =>
+            prev.map((a) => (a.id === editingArticle.id ? res.data : a))
+          );
           toast.success(t("news.saveSuccess"));
           setDialogOpen(false);
           router.refresh();
@@ -150,6 +158,7 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
       } else {
         const res = await createArticleAction(formData);
         if (res.ok) {
+          setArticles((prev) => [res.data, ...prev]);
           toast.success(t("news.saveSuccess"));
           setDialogOpen(false);
           router.refresh();
@@ -175,7 +184,14 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
   };
 
   const handleTogglePin = async (article: ArticleDto) => {
-    startTransition(async () => {
+    const nextPinned = !article.pinned;
+
+    // Real-time optimistic update: update local UI state immediately
+    setArticles((prev) =>
+      prev.map((a) => (a.id === article.id ? { ...a, pinned: nextPinned } : a))
+    );
+
+    try {
       const res = await updateArticleAction({
         id: article.id,
         titleTh: article.titleTh,
@@ -188,19 +204,38 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
         contentEn: article.contentEn,
         coverImageUrl: article.coverImageUrl,
         status: article.status,
-        pinned: !article.pinned,
+        pinned: nextPinned,
       });
+
       if (res.ok) {
-        toast.success(locale === "th" ? "ปรับสถานะการปักหมุดแล้ว" : "Pin status updated");
+        toast.success(
+          locale === "th"
+            ? nextPinned
+              ? "ปักหมุดข่าวแล้ว"
+              : "ยกเลิกการปักหมุดแล้ว"
+            : nextPinned
+            ? "Article pinned"
+            : "Article unpinned"
+        );
         router.refresh();
       } else {
+        // Rollback on server error
+        setArticles((prev) =>
+          prev.map((a) => (a.id === article.id ? { ...a, pinned: article.pinned } : a))
+        );
         toast.error(res.error.message);
       }
-    });
+    } catch {
+      // Rollback on exception
+      setArticles((prev) =>
+        prev.map((a) => (a.id === article.id ? { ...a, pinned: article.pinned } : a))
+      );
+      toast.error(t("common.error"));
+    }
   };
 
   // Filter articles
-  const filtered = (articles.length ? articles : initialArticles).filter((a) => {
+  const filtered = articles.filter((a) => {
     const matchesSearch =
       a.titleTh.toLowerCase().includes(search.toLowerCase()) ||
       a.titleEn.toLowerCase().includes(search.toLowerCase()) ||
@@ -290,15 +325,27 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
                       <button
                         type="button"
                         onClick={() => handleTogglePin(article)}
-                        disabled={pending || !canManage}
-                        className={`p-1.5 rounded-md transition-colors ${
+                        disabled={!canManage}
+                        className={`p-1.5 rounded-md transition-all duration-200 cursor-pointer ${
                           article.pinned
-                            ? "text-primary hover:bg-primary/10"
-                            : "text-muted-foreground/40 hover:text-muted-foreground hover:bg-muted"
+                            ? "text-primary bg-primary/10 hover:bg-primary/20 shadow-xs"
+                            : "text-muted-foreground/30 hover:text-muted-foreground hover:bg-muted"
                         }`}
-                        title={article.pinned ? "Unpin" : "Pin"}
+                        title={
+                          article.pinned
+                            ? locale === "th"
+                              ? "คลิกเพื่อยกเลิกการปักหมุด"
+                              : "Click to unpin"
+                            : locale === "th"
+                            ? "คลิกเพื่อปักหมุดข่าวนี้"
+                            : "Click to pin"
+                        }
                       >
-                        <Pin className="h-4 w-4" />
+                        <Pin
+                          className={`h-4 w-4 transition-transform duration-200 ${
+                            article.pinned ? "rotate-45 fill-primary text-primary" : ""
+                          }`}
+                        />
                       </button>
                     </td>
 
