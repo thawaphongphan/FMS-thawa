@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -16,6 +16,8 @@ import {
   Briefcase,
   FileText,
   Users,
+  Download,
+  Upload,
 } from "lucide-react";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
 import type { CurriculumDto } from "@/features/curriculum";
@@ -94,6 +96,7 @@ export function CurriculumClient({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("basic");
   const [editingCurriculum, setEditingCurriculum] = useState<CurriculumDto | null>(null);
+  const jsonFileInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [formData, setFormData] = useState(initialFormData);
@@ -164,6 +167,107 @@ export function CurriculumClient({
       .split("\n")
       .map((line) => line.trim())
       .filter((line) => line.length > 0);
+
+  const handleExportCurriculumJson = () => {
+    const exportObject = {
+      programCode: formData.programCode,
+      degreeLevel: formData.degreeLevel,
+      nameTh: formData.nameTh,
+      nameEn: formData.nameEn,
+      degreeTitleTh: formData.degreeTitleTh,
+      degreeTitleEn: formData.degreeTitleEn,
+      totalCredits: formData.totalCredits,
+      durationYears: formData.durationYears,
+      revisedYear: formData.revisedYear,
+      departmentId: formData.departmentId || null,
+      brochureUrl: formData.brochureUrl || null,
+      isActive: formData.isActive,
+      details: {
+        philosophyTh: formData.details.philosophyTh,
+        philosophyEn: formData.details.philosophyEn,
+        objectivesTh: parseLines(formData.details.objectivesTh),
+        objectivesEn: parseLines(formData.details.objectivesEn),
+        careerPathsTh: parseLines(formData.details.careerPathsTh),
+        careerPathsEn: parseLines(formData.details.careerPathsEn),
+        admissionCriteriaTh: formData.details.admissionCriteriaTh,
+        admissionCriteriaEn: formData.details.admissionCriteriaEn,
+        englishProficiencyRequirements: formData.details.englishProficiencyRequirements,
+        studyPlansSummaryTh: formData.details.studyPlansSummaryTh,
+        studyPlansSummaryEn: formData.details.studyPlansSummaryEn,
+        tuitionFeeEstimate: formData.details.tuitionFeeEstimate,
+      },
+    };
+
+    const jsonStr = JSON.stringify(exportObject, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const code = (formData.programCode || "curriculum").trim().replace(/[^a-zA-Z0-9_-]/g, "_");
+    const year = formData.revisedYear || "tqf2";
+    a.href = url;
+    a.download = `${code}_${year}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportCurriculumJson = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = (e.target?.result as string) || "";
+        const data = JSON.parse(text);
+
+        if (!data || typeof data !== "object") {
+          toast.error(t("curriculum.importJsonError"));
+          return;
+        }
+
+        const d = (data.details && typeof data.details === "object" ? data.details : {}) as Record<string, unknown>;
+        const toMultiline = (val: unknown): string => {
+          if (Array.isArray(val)) return val.join("\n");
+          if (typeof val === "string") return val;
+          return "";
+        };
+
+        setFormData((prev) => ({
+          ...prev,
+          departmentId: typeof data.departmentId === "string" ? data.departmentId : prev.departmentId,
+          degreeLevel: data.degreeLevel || prev.degreeLevel,
+          programCode: data.programCode !== undefined ? String(data.programCode) : prev.programCode,
+          nameTh: data.nameTh !== undefined ? String(data.nameTh) : prev.nameTh,
+          nameEn: data.nameEn !== undefined ? String(data.nameEn) : prev.nameEn,
+          degreeTitleTh: data.degreeTitleTh !== undefined ? String(data.degreeTitleTh) : prev.degreeTitleTh,
+          degreeTitleEn: data.degreeTitleEn !== undefined ? String(data.degreeTitleEn) : prev.degreeTitleEn,
+          totalCredits: data.totalCredits !== undefined ? Number(data.totalCredits) || prev.totalCredits : prev.totalCredits,
+          durationYears: data.durationYears !== undefined ? Number(data.durationYears) || prev.durationYears : prev.durationYears,
+          revisedYear: data.revisedYear !== undefined ? Number(data.revisedYear) || prev.revisedYear : prev.revisedYear,
+          brochureUrl: data.brochureUrl !== undefined ? String(data.brochureUrl || "") : prev.brochureUrl,
+          isActive: typeof data.isActive === "boolean" ? data.isActive : prev.isActive,
+          details: {
+            philosophyTh: d.philosophyTh !== undefined ? String(d.philosophyTh) : prev.details.philosophyTh,
+            philosophyEn: d.philosophyEn !== undefined ? String(d.philosophyEn) : prev.details.philosophyEn,
+            objectivesTh: d.objectivesTh !== undefined ? toMultiline(d.objectivesTh) : prev.details.objectivesTh,
+            objectivesEn: d.objectivesEn !== undefined ? toMultiline(d.objectivesEn) : prev.details.objectivesEn,
+            careerPathsTh: d.careerPathsTh !== undefined ? toMultiline(d.careerPathsTh) : prev.details.careerPathsTh,
+            careerPathsEn: d.careerPathsEn !== undefined ? toMultiline(d.careerPathsEn) : prev.details.careerPathsEn,
+            admissionCriteriaTh: d.admissionCriteriaTh !== undefined ? String(d.admissionCriteriaTh) : prev.details.admissionCriteriaTh,
+            admissionCriteriaEn: d.admissionCriteriaEn !== undefined ? String(d.admissionCriteriaEn) : prev.details.admissionCriteriaEn,
+            englishProficiencyRequirements: d.englishProficiencyRequirements !== undefined ? String(d.englishProficiencyRequirements) : prev.details.englishProficiencyRequirements,
+            studyPlansSummaryTh: d.studyPlansSummaryTh !== undefined ? String(d.studyPlansSummaryTh) : prev.details.studyPlansSummaryTh,
+            studyPlansSummaryEn: d.studyPlansSummaryEn !== undefined ? String(d.studyPlansSummaryEn) : prev.details.studyPlansSummaryEn,
+            tuitionFeeEstimate: d.tuitionFeeEstimate !== undefined ? String(d.tuitionFeeEstimate) : prev.details.tuitionFeeEstimate,
+          },
+        }));
+
+        toast.success(t("curriculum.importJsonSuccess"));
+      } catch {
+        toast.error(t("curriculum.importJsonError"));
+      }
+    };
+    reader.readAsText(file, "UTF-8");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,7 +575,7 @@ export function CurriculumClient({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-muted/20">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4 bg-muted/20">
               <div>
                 <h2 className="text-lg font-bold text-foreground">
                   {editingCurriculum ? t("curriculum.edit") : t("curriculum.create")}
@@ -482,13 +586,48 @@ export function CurriculumClient({
                     : "Fill curriculum information following TQF 2 structure for portal publication"}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setDialogOpen(false)}
-                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1.5">
+                <input
+                  ref={jsonFileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImportCurriculumJson(file);
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportCurriculumJson}
+                  className="h-8 gap-1.5 text-xs bg-background shadow-xs hover:bg-muted"
+                  title={t("curriculum.exportJson")}
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>{t("curriculum.exportJson")}</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => jsonFileInputRef.current?.click()}
+                  className="h-8 gap-1.5 text-xs bg-background shadow-xs hover:bg-muted"
+                  title={t("curriculum.importJson")}
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>{t("curriculum.importJson")}</span>
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setDialogOpen(false)}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors ml-1"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Tab Navigation */}
