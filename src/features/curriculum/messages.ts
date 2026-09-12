@@ -2,7 +2,7 @@ export const messages = {
   "curriculum.nav": { th: "หลักสูตรการศึกษา", en: "Curriculum" },
   "curriculum.title": { th: "หลักสูตรการศึกษา", en: "Academic Programs & Curriculum" },
   "curriculum.subtitle": { th: "หลักสูตรมาตรฐานสากล มุ่งเน้นการปฏิบัติจริงและการคิดค้นนวัตกรรม", en: "World-class programs focusing on hands-on experience and innovative research" },
-  "curriculum.adminTitle": { th: "จัดการหลักสูตรการศึกษา", en: "Curriculum Management" },
+  "curriculum.adminTitle": { th: "การจัดการหลักสูตร", en: "Curriculum Management" },
   "curriculum.adminSubtitle": { th: "เพิ่ม แก้ไข ข้อมูลหลักสูตร แผนการศึกษา และรายวิชา", en: "Add and edit curricula, study plans, and courses" },
   "curriculum.degreeLevel": { th: "ระดับการศึกษา", en: "Degree Level" },
   "curriculum.bachelor": { th: "ปริญญาตรี", en: "Bachelor's Degree" },

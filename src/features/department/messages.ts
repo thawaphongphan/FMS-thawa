@@ -2,7 +2,7 @@ export const messages = {
   "department.nav": { th: "ภาควิชา / ส่วนงาน", en: "Departments & Units" },
   "department.title": { th: "ภาควิชาและส่วนงาน", en: "Departments & Academic Units" },
   "department.subtitle": { th: "โครงสร้างภาควิชาและส่วนงานสำหรับการจัดเก็บหลักสูตรและบุคลากร", en: "Department and unit structure for organizing curricula and faculty members" },
-  "department.adminTitle": { th: "จัดการภาควิชา / ส่วนงาน", en: "Department Management" },
+  "department.adminTitle": { th: "การจัดการภาควิชา", en: "Department Management" },
   "department.adminSubtitle": { th: "เพิ่ม แก้ไข ลบ และจัดระเบียบภาควิชาหรือส่วนงานที่จัดเก็บหลักสูตร", en: "Add, edit, delete, and organize departments and academic units storing curricula" },
   "department.code": { th: "รหัสภาควิชา / ส่วนงาน", en: "Department Code" },
   "department.codeHelp": { th: "เช่น CS, SE, DS, ACADEMIC (ตัวพิมพ์ใหญ่หรือตัวเลข 2-50 ตัว)", en: "e.g. CS, SE, DS, ACADEMIC (2-50 uppercase letters/numbers)" },

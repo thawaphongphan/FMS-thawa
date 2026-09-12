@@ -23,6 +23,17 @@ describe("sidebar-nav", () => {
     expect(getActiveNavChain("/users/roles").map((c) => c.href)).toEqual(["/users", "/users/roles"]);
     expect(getActiveNavChain("/settings").map((c) => c.href)).toEqual(["/settings"]);
     expect(getActiveNavChain("/nowhere")).toEqual([]);
+    expect(getActiveNavChain("/admin/departments").map((c) => c.href)).toEqual(["/admin/management", "/admin/departments"]);
+    expect(getActiveNavChain("/admin/curriculum").map((c) => c.href)).toEqual(["/admin/management", "/admin/curriculum"]);
   });
   it("โครงสร้างกลุ่มเมนูหลัก", () => expect(sidebarGroups).toHaveLength(10));
+  it("เมนูการจัดการแสดงผลเมื่อมีสิทธิ์ภาควิชาหรือหลักสูตร", () => {
+    const academicAdmin = { roles: [], permissions: ["department:read", "curriculum:read"], isSuperAdmin: false };
+    const groups = visibleGroups(academicAdmin);
+    const mgmtGroup = groups.find((g) => g.label === "nav.group.management");
+    expect(mgmtGroup).toBeDefined();
+    const mgmtItem = mgmtGroup?.items.find((i) => i.href === "/admin/management");
+    expect(mgmtItem).toBeDefined();
+    expect(mgmtItem?.children?.map((c) => c.href)).toEqual(["/admin/departments", "/admin/curriculum"]);
+  });
 });

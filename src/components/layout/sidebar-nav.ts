@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Settings, Layers, Newspaper, GraduationCap, BookOpen, CalendarDays, BarChart3, UserCheck, Building2, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Layers, Newspaper, GraduationCap, BookOpen, CalendarDays, BarChart3, UserCheck, Building2, FolderKanban, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
 import { NEWS_P } from "@/features/news";
@@ -24,11 +24,16 @@ export interface NavCrumb { title: string; href: string }
 export const sidebarGroups: NavGroup[] = [
   { label: "nav.group.overview", items: [{ title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }] },
   {
-    label: "curriculum.nav",
-    items: [
-      { title: "department.adminTitle", href: "/admin/departments", icon: Building2, permission: DEPARTMENT_P.departmentRead },
-      { title: "curriculum.adminTitle", href: "/admin/curriculum", icon: BookOpen, permission: CURRICULUM_P.curriculumRead },
-    ],
+    label: "nav.group.management",
+    items: [{
+      title: "nav.management",
+      href: "/admin/management",
+      icon: FolderKanban,
+      children: [
+        { title: "department.adminTitle", href: "/admin/departments", icon: Building2, permission: DEPARTMENT_P.departmentRead },
+        { title: "curriculum.adminTitle", href: "/admin/curriculum", icon: BookOpen, permission: CURRICULUM_P.curriculumRead },
+      ],
+    }],
   },
   {
     label: "schedule.nav",

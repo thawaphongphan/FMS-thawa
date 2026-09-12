@@ -38,6 +38,8 @@ export const MESSAGES: Dictionary = {
   "nav.expand": { th: "ขยายเมนู", en: "Expand sidebar" },
   "nav.themeToggle": { th: "สลับโหมดสว่าง/มืด", en: "Toggle light/dark" },
   "nav.group.overview": { th: "ภาพรวม", en: "Overview" },
+  "nav.group.management": { th: "การจัดการ", en: "Management" },
+  "nav.management": { th: "การจัดการ", en: "Management" },
   "nav.group.sample": { th: "โมดูลตัวอย่าง", en: "Sample Feature" },
   "nav.group.users": { th: "ผู้ใช้งาน", en: "Users" },
   "nav.group.settings": { th: "ตั้งค่า", en: "Settings" },
