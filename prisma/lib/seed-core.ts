@@ -43,16 +43,45 @@ export async function seedCore(db: PrismaClient, opts: SeedCoreOptions): Promise
   return { tenantId: tenant.id, roleIds };
 }
 
-/** สร้าง/อัปเดตผู้ใช้พร้อมสมาชิกภาพและบทบาท scope ALL */
+/** สร้าง/อัปเดตผู้ใช้พร้อมสมาชิกภาพและบทบาท scope ALL (สงวนรหัสผ่านเดิมไว้หากผู้ใช้มีอยู่แล้ว) */
 export async function seedUser(
   db: PrismaClient,
   tenantId: string,
-  input: { email: string; name: string; passwordHash: string; roleIds: string[]; mustChangePassword?: boolean; isActive?: boolean },
+  input: {
+    email: string;
+    name: string;
+    passwordHash: string;
+    roleIds: string[];
+    mustChangePassword?: boolean;
+    isActive?: boolean;
+    preserveExistingPassword?: boolean;
+  },
 ): Promise<string> {
+  const existing = await db.user.findUnique({
+    where: { email: input.email.toLowerCase() },
+    select: { id: true, passwordHash: true, mustChangePassword: true },
+  });
+
+  const shouldPreserve = input.preserveExistingPassword ?? true;
+  const passwordHash = shouldPreserve && existing?.passwordHash ? existing.passwordHash : input.passwordHash;
+  const mustChangePassword = shouldPreserve && existing ? existing.mustChangePassword : (input.mustChangePassword ?? false);
+
   const user = await db.user.upsert({
     where: { email: input.email.toLowerCase() },
-    update: { name: input.name, passwordHash: input.passwordHash, mustChangePassword: input.mustChangePassword ?? false, isActive: input.isActive ?? true },
-    create: { email: input.email.toLowerCase(), name: input.name, passwordHash: input.passwordHash, emailVerified: true, mustChangePassword: input.mustChangePassword ?? false, isActive: input.isActive ?? true },
+    update: {
+      name: input.name,
+      passwordHash,
+      mustChangePassword,
+      isActive: input.isActive ?? true,
+    },
+    create: {
+      email: input.email.toLowerCase(),
+      name: input.name,
+      passwordHash: input.passwordHash,
+      emailVerified: true,
+      mustChangePassword: input.mustChangePassword ?? false,
+      isActive: input.isActive ?? true,
+    },
   });
   const ut = await db.userTenant.upsert({
     where: { userId_tenantId: { userId: user.id, tenantId } },

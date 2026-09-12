@@ -29,8 +29,14 @@ async function main() {
     { email: "user@gmail.com", name: "Google User", roles: ["VIEWER"] },
     { email: "user@line.me", name: "LINE User", roles: ["VIEWER"] },
   ];
+  const forceReset = process.env.SEED_FORCE_RESET_PASSWORD === "1";
   for (const u of users) {
-    await seedUser(prisma, core.tenantId, { ...u, passwordHash: hash, roleIds: u.roles.map((c) => core.roleIds[c]) });
+    await seedUser(prisma, core.tenantId, {
+      ...u,
+      passwordHash: hash,
+      roleIds: u.roles.map((c) => core.roleIds[c]),
+      preserveExistingPassword: !forceReset,
+    });
   }
 
   // --- Seed หมวดหมู่ข่าว ---
