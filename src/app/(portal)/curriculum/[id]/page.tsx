@@ -9,10 +9,17 @@ import {
   FileText,
   Download,
   GraduationCap,
+  Building2,
+  Quote,
+  Target,
+  Briefcase,
+  CheckCircle2,
+  Wallet,
 } from "lucide-react";
 import { getLocale, getT } from "@/i18n/server";
 import { getDefaultTenantId } from "@/shared/lib/portal-tenant";
 import { getCurriculumById } from "@/features/curriculum/server";
+import type { CurriculumDetails } from "@/features/curriculum";
 import { Button } from "@/components/ui/button";
 
 interface CurriculumDetailProps {
@@ -30,6 +37,28 @@ export default async function CurriculumDetailPage({ params }: CurriculumDetailP
   if (!curriculum) {
     notFound();
   }
+
+  const details = (curriculum.details || {}) as CurriculumDetails;
+
+  const objectives =
+    locale === "th"
+      ? (details.objectivesTh?.length ? details.objectivesTh : details.objectivesEn ?? [])
+      : (details.objectivesEn?.length ? details.objectivesEn : details.objectivesTh ?? []);
+
+  const careers =
+    locale === "th"
+      ? (details.careerPathsTh?.length ? details.careerPathsTh : details.careerPathsEn ?? [])
+      : (details.careerPathsEn?.length ? details.careerPathsEn : details.careerPathsTh ?? []);
+
+  const admissionCriteria =
+    locale === "th"
+      ? (details.admissionCriteriaTh || details.admissionCriteriaEn)
+      : (details.admissionCriteriaEn || details.admissionCriteriaTh);
+
+  const studyPlansSummary =
+    locale === "th"
+      ? (details.studyPlansSummaryTh || details.studyPlansSummaryEn)
+      : (details.studyPlansSummaryEn || details.studyPlansSummaryTh);
 
   const getDegreeLabel = (level: string) => {
     switch (level) {
@@ -68,9 +97,17 @@ export default async function CurriculumDetailPage({ params }: CurriculumDetailP
           {/* Main Content (2 cols) */}
           <div className="lg:col-span-2 space-y-8">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary mb-3">
-                <GraduationCap className="h-3.5 w-3.5" />
-                <span>{getDegreeLabel(curriculum.degreeLevel)}</span>
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  <span>{getDegreeLabel(curriculum.degreeLevel)}</span>
+                </span>
+                {curriculum.department && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/30 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+                    <Building2 className="h-3.5 w-3.5" />
+                    <span>{locale === "th" ? curriculum.department.nameTh : curriculum.department.nameEn}</span>
+                  </span>
+                )}
               </div>
               <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl md:text-4xl">
                 {locale === "th" ? curriculum.nameTh : curriculum.nameEn}
@@ -87,15 +124,114 @@ export default async function CurriculumDetailPage({ params }: CurriculumDetailP
               </h2>
               <div className="space-y-2">
                 <div>
-                  <span className="text-xs font-medium text-muted-foreground">{locale === "th" ? "ภาษาไทย:" : "Thai:"} </span>
+                  <span className="text-xs font-medium text-muted-foreground">{locale === "th" ? "ภาษาไทย: " : "Thai: "}</span>
                   <span className="text-sm font-semibold text-foreground">{curriculum.degreeTitleTh}</span>
                 </div>
                 <div>
-                  <span className="text-xs font-medium text-muted-foreground">{locale === "th" ? "ภาษาอังกฤษ:" : "English:"} </span>
+                  <span className="text-xs font-medium text-muted-foreground">{locale === "th" ? "ภาษาอังกฤษ: " : "English: "}</span>
                   <span className="text-sm font-semibold text-foreground">{curriculum.degreeTitleEn}</span>
                 </div>
               </div>
             </div>
+
+            {/* Program Philosophy (Quote / Highlight Card) */}
+            {(details.philosophyTh || details.philosophyEn) && (
+              <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-amber-500/5 p-6 shadow-sm">
+                <div className="flex items-center gap-2 text-primary font-bold text-sm mb-2">
+                  <Quote className="h-4 w-4" />
+                  <span>{t("curriculum.philosophyTitle")}</span>
+                </div>
+                <p className="text-sm sm:text-base font-medium text-foreground leading-relaxed italic">
+                  &ldquo;{locale === "th" ? (details.philosophyTh || details.philosophyEn) : (details.philosophyEn || details.philosophyTh)}&rdquo;
+                </p>
+              </div>
+            )}
+
+            {/* Program Objectives */}
+            {objectives.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  <span>{t("curriculum.objectivesTitle")}</span>
+                </h2>
+                <div className="grid gap-3">
+                  {objectives.map((obj, idx) => (
+                    <div key={idx} className="flex items-start gap-3 rounded-xl border border-border bg-card p-4">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                        {idx + 1}
+                      </span>
+                      <p className="text-sm text-foreground leading-relaxed pt-0.5">{obj}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Study Plans Summary */}
+            {studyPlansSummary && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  <span>{t("curriculum.studyPlansTitle")}</span>
+                </h2>
+                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                  <div className="whitespace-pre-line text-sm text-foreground leading-relaxed font-sans">
+                    {studyPlansSummary}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Career Opportunities */}
+            {careers.length > 0 && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-primary" />
+                  <span>{t("curriculum.careersTitle")}</span>
+                </h2>
+                <div className="grid gap-2.5 sm:grid-cols-2">
+                  {careers.map((career, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 rounded-xl border border-border/80 bg-card p-3.5 text-sm shadow-2xs hover:border-primary/40 transition-colors"
+                    >
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                      </div>
+                      <span className="font-medium text-foreground text-xs sm:text-sm">{career}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Admission Criteria & English Requirements */}
+            {(admissionCriteria || details.englishProficiencyRequirements) && (
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  <span>{t("curriculum.admissionsTitle")}</span>
+                </h2>
+                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-4">
+                  {admissionCriteria && (
+                    <div className="text-sm text-muted-foreground whitespace-pre-line leading-relaxed">
+                      {admissionCriteria}
+                    </div>
+                  )}
+                  {details.englishProficiencyRequirements && (
+                    <div className="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/60 dark:bg-blue-950/30 p-4">
+                      <div className="text-xs font-bold text-blue-900 dark:text-blue-300 mb-1 flex items-center gap-1.5">
+                        <Award className="h-4 w-4" />
+                        <span>{t("curriculum.englishProficiencyTitle")}</span>
+                      </div>
+                      <div className="text-xs text-blue-800 dark:text-blue-200 whitespace-pre-line leading-relaxed">
+                        {details.englishProficiencyRequirements}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Course Curriculum Structure */}
             <div className="space-y-4">
@@ -107,8 +243,8 @@ export default async function CurriculumDetailPage({ params }: CurriculumDetailP
               {(!curriculum.courses || curriculum.courses.length === 0) ? (
                 <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                   {locale === "th"
-                    ? "อยู่ในระหว่างการปรับปรุงรายการรายวิชาประจำภาคการศึกษา โปรดดาวน์โหลดเล่มหลักสูตรฉบับเต็ม"
-                    : "Course list is being updated. Please refer to the official brochure PDF."}
+                    ? "สามารถดูรายละเอียดรายวิชาและโครงสร้างหลักสูตรฉบับสมบูรณ์ได้จากเอกสาร มคอ. 2 ด้านล่าง"
+                    : "Full course structure and study plan can be downloaded via the official TQF 2 brochure below."}
                 </div>
               ) : (
                 <div className="divide-y divide-border rounded-xl border border-border bg-card overflow-hidden">
@@ -146,7 +282,7 @@ export default async function CurriculumDetailPage({ params }: CurriculumDetailP
 
           {/* Sidebar Info Card (1 col) */}
           <div className="space-y-6">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-6 sticky top-6">
               <h3 className="font-bold text-foreground text-base border-b border-border pb-3">
                 {locale === "th" ? "ข้อมูลหลักสูตรโดยย่อ" : "Program Summary"}
               </h3>
@@ -195,6 +331,30 @@ export default async function CurriculumDetailPage({ params }: CurriculumDetailP
                     {curriculum.programCode}
                   </span>
                 </div>
+
+                {curriculum.department && (
+                  <div className="flex items-start justify-between gap-2 border-t border-border/60 pt-3">
+                    <span className="flex items-center gap-2 text-muted-foreground shrink-0">
+                      <Building2 className="h-4 w-4 text-primary" />
+                      <span>{t("curriculum.department")}</span>
+                    </span>
+                    <span className="font-medium text-right text-xs text-foreground">
+                      {locale === "th" ? curriculum.department.nameTh : curriculum.department.nameEn}
+                    </span>
+                  </div>
+                )}
+
+                {details.tuitionFeeEstimate && (
+                  <div className="flex items-start justify-between gap-2 border-t border-border/60 pt-3">
+                    <span className="flex items-center gap-2 text-muted-foreground shrink-0">
+                      <Wallet className="h-4 w-4 text-primary" />
+                      <span>{t("curriculum.tuitionTitle")}</span>
+                    </span>
+                    <span className="font-semibold text-right text-xs text-foreground">
+                      {details.tuitionFeeEstimate}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {curriculum.brochureUrl && (

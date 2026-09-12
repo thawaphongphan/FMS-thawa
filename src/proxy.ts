@@ -12,6 +12,7 @@ const PUBLIC_PREFIXES = [
   "/news",
   "/staff",
   "/curriculum",
+  "/academic-programs",
   "/schedule",
   "/alumni",
   "/statistics",

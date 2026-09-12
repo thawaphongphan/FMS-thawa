@@ -3,7 +3,19 @@
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Search, BookOpen, Check, X, Building2 } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  Search,
+  BookOpen,
+  Check,
+  X,
+  Building2,
+  Target,
+  Briefcase,
+  FileText,
+} from "lucide-react";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
 import type { CurriculumDto } from "@/features/curriculum";
 import {
@@ -26,6 +38,39 @@ interface CurriculumClientProps {
   canManage: boolean;
 }
 
+type TabType = "basic" | "philosophy" | "careers" | "plans";
+
+const initialFormDetails = {
+  philosophyTh: "",
+  philosophyEn: "",
+  objectivesTh: "",
+  objectivesEn: "",
+  careerPathsTh: "",
+  careerPathsEn: "",
+  admissionCriteriaTh: "",
+  admissionCriteriaEn: "",
+  englishProficiencyRequirements: "",
+  studyPlansSummaryTh: "",
+  studyPlansSummaryEn: "",
+  tuitionFeeEstimate: "",
+};
+
+const initialFormData = {
+  departmentId: "",
+  degreeLevel: "BACHELOR" as "BACHELOR" | "MASTER" | "DOCTORATE" | "CERTIFICATE" | "TRAINING",
+  programCode: "",
+  nameTh: "",
+  nameEn: "",
+  degreeTitleTh: "",
+  degreeTitleEn: "",
+  totalCredits: 130,
+  durationYears: 4,
+  revisedYear: 2569,
+  brochureUrl: "",
+  isActive: true,
+  details: { ...initialFormDetails },
+};
+
 export function CurriculumClient({
   initialCurricula,
   departments = [],
@@ -44,47 +89,28 @@ export function CurriculumClient({
     searchParams.get("departmentId") || "ALL"
   );
 
-  // Dialog State
+  // Dialog State & Active Tab
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("basic");
   const [editingCurriculum, setEditingCurriculum] = useState<CurriculumDto | null>(null);
 
   // Form State
-  const [formData, setFormData] = useState({
-    departmentId: "",
-    degreeLevel: "BACHELOR" as "BACHELOR" | "MASTER" | "DOCTORATE" | "CERTIFICATE" | "TRAINING",
-    programCode: "",
-    nameTh: "",
-    nameEn: "",
-    degreeTitleTh: "",
-    degreeTitleEn: "",
-    totalCredits: 130,
-    durationYears: 4,
-    revisedYear: 2569,
-    brochureUrl: "",
-    isActive: true,
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   const openCreateDialog = () => {
     setEditingCurriculum(null);
+    setActiveTab("basic");
     setFormData({
-      departmentId: "",
-      degreeLevel: "BACHELOR",
-      programCode: "",
-      nameTh: "",
-      nameEn: "",
-      degreeTitleTh: "",
-      degreeTitleEn: "",
-      totalCredits: 130,
-      durationYears: 4,
-      revisedYear: 2569,
-      brochureUrl: "",
-      isActive: true,
+      ...initialFormData,
+      details: { ...initialFormDetails },
     });
     setDialogOpen(true);
   };
 
   const openEditDialog = (item: CurriculumDto) => {
     setEditingCurriculum(item);
+    setActiveTab("basic");
+    const d = item.details || {};
     setFormData({
       departmentId: item.departmentId || "",
       degreeLevel: item.degreeLevel,
@@ -98,17 +124,71 @@ export function CurriculumClient({
       revisedYear: item.revisedYear,
       brochureUrl: item.brochureUrl || "",
       isActive: item.isActive,
+      details: {
+        philosophyTh: d.philosophyTh || "",
+        philosophyEn: d.philosophyEn || "",
+        objectivesTh: Array.isArray(d.objectivesTh)
+          ? d.objectivesTh.join("\n")
+          : typeof d.objectivesTh === "string"
+          ? d.objectivesTh
+          : "",
+        objectivesEn: Array.isArray(d.objectivesEn)
+          ? d.objectivesEn.join("\n")
+          : typeof d.objectivesEn === "string"
+          ? d.objectivesEn
+          : "",
+        careerPathsTh: Array.isArray(d.careerPathsTh)
+          ? d.careerPathsTh.join("\n")
+          : typeof d.careerPathsTh === "string"
+          ? d.careerPathsTh
+          : "",
+        careerPathsEn: Array.isArray(d.careerPathsEn)
+          ? d.careerPathsEn.join("\n")
+          : typeof d.careerPathsEn === "string"
+          ? d.careerPathsEn
+          : "",
+        admissionCriteriaTh: d.admissionCriteriaTh || "",
+        admissionCriteriaEn: d.admissionCriteriaEn || "",
+        englishProficiencyRequirements: (d.englishProficiencyRequirements as string) || "",
+        studyPlansSummaryTh: d.studyPlansSummaryTh || "",
+        studyPlansSummaryEn: d.studyPlansSummaryEn || "",
+        tuitionFeeEstimate: d.tuitionFeeEstimate || "",
+      },
     });
     setDialogOpen(true);
   };
 
+  const parseLines = (text: string) =>
+    text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
+      const payload = {
+        ...formData,
+        details: {
+          philosophyTh: formData.details.philosophyTh.trim(),
+          philosophyEn: formData.details.philosophyEn.trim(),
+          objectivesTh: parseLines(formData.details.objectivesTh),
+          objectivesEn: parseLines(formData.details.objectivesEn),
+          careerPathsTh: parseLines(formData.details.careerPathsTh),
+          careerPathsEn: parseLines(formData.details.careerPathsEn),
+          admissionCriteriaTh: formData.details.admissionCriteriaTh.trim(),
+          admissionCriteriaEn: formData.details.admissionCriteriaEn.trim(),
+          englishProficiencyRequirements: formData.details.englishProficiencyRequirements.trim(),
+          studyPlansSummaryTh: formData.details.studyPlansSummaryTh.trim(),
+          studyPlansSummaryEn: formData.details.studyPlansSummaryEn.trim(),
+          tuitionFeeEstimate: formData.details.tuitionFeeEstimate.trim(),
+        },
+      };
+
       if (editingCurriculum) {
         const res = await updateCurriculumAction({
           id: editingCurriculum.id,
-          ...formData,
+          ...payload,
         });
         if (res.ok) {
           toast.success(t("curriculum.saveSuccess"));
@@ -121,7 +201,7 @@ export function CurriculumClient({
           toast.error(res.error.message || "Failed to update");
         }
       } else {
-        const res = await createCurriculumAction(formData);
+        const res = await createCurriculumAction(payload);
         if (res.ok) {
           toast.success(t("curriculum.saveSuccess"));
           setCurricula((prev) => [res.data, ...prev]);
@@ -331,221 +411,555 @@ export function CurriculumClient({
       {/* Create / Edit Dialog Modal */}
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <h2 className="text-lg font-bold text-foreground">
-                {editingCurriculum ? t("curriculum.edit") : t("curriculum.create")}
-              </h2>
+          <div className="w-full max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-muted/20">
+              <div>
+                <h2 className="text-lg font-bold text-foreground">
+                  {editingCurriculum ? t("curriculum.edit") : t("curriculum.create")}
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {locale === "th"
+                    ? "กรอกรายละเอียดหลักสูตรตามโครงสร้าง มคอ. 2 เพื่อเผยแพร่บนหน้า Portal"
+                    : "Fill curriculum information following TQF 2 structure for portal publication"}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setDialogOpen(false)}
-                className="rounded-lg p-1 text-muted-foreground hover:bg-muted"
+                className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Department selection */}
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {t("curriculum.department")}
-                </label>
-                <select
-                  value={formData.departmentId}
-                  onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="">{t("curriculum.selectDepartment")}</option>
-                  {departments.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.code} - {locale === "th" ? dept.nameTh : dept.nameEn}
-                    </option>
-                  ))}
-                </select>
+            {/* Tab Navigation */}
+            <div className="flex border-b border-border bg-muted/10 px-6 space-x-2 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setActiveTab("basic")}
+                className={`flex items-center gap-2 py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "basic"
+                    ? "border-primary text-primary bg-background shadow-xs rounded-t-lg"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                <span>{t("curriculum.tabBasic")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("philosophy")}
+                className={`flex items-center gap-2 py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "philosophy"
+                    ? "border-primary text-primary bg-background shadow-xs rounded-t-lg"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Target className="h-3.5 w-3.5" />
+                <span>{t("curriculum.tabPhilosophy")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("careers")}
+                className={`flex items-center gap-2 py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "careers"
+                    ? "border-primary text-primary bg-background shadow-xs rounded-t-lg"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Briefcase className="h-3.5 w-3.5" />
+                <span>{t("curriculum.tabCareers")}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("plans")}
+                className={`flex items-center gap-2 py-3 px-3 text-xs font-semibold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === "plans"
+                    ? "border-primary text-primary bg-background shadow-xs rounded-t-lg"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>{t("curriculum.tabPlans")}</span>
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* TAB 1: BASIC INFO */}
+                {activeTab === "basic" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.department")}
+                      </label>
+                      <select
+                        value={formData.departmentId}
+                        onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">{t("curriculum.selectDepartment")}</option>
+                        {departments.map((dept) => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.code} - {locale === "th" ? dept.nameTh : dept.nameEn}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {t("curriculum.degreeLevel")}
+                        </label>
+                        <select
+                          value={formData.degreeLevel}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              degreeLevel: e.target.value as
+                                | "BACHELOR"
+                                | "MASTER"
+                                | "DOCTORATE"
+                                | "CERTIFICATE"
+                                | "TRAINING",
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                        >
+                          <option value="BACHELOR">{t("curriculum.bachelor")}</option>
+                          <option value="MASTER">{t("curriculum.master")}</option>
+                          <option value="DOCTORATE">{t("curriculum.doctorate")}</option>
+                          <option value="CERTIFICATE">{t("curriculum.certificate")}</option>
+                          <option value="TRAINING">{t("curriculum.training")}</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {t("curriculum.programCode")} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.programCode}
+                          onChange={(e) => setFormData({ ...formData, programCode: e.target.value })}
+                          placeholder="e.g. 629-MBD หรือ CS-2569"
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.nameTh")} <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.nameTh}
+                        onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
+                        placeholder="เช่น หลักสูตรพุทธศาสตรมหาบัณฑิต สาขาวิชาพระธรรมทูต"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.nameEn")} <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.nameEn}
+                        onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                        placeholder="e.g. Master of Buddhism Program in Dhammaduta"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {t("curriculum.degreeTitleTh")} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.degreeTitleTh}
+                          onChange={(e) => setFormData({ ...formData, degreeTitleTh: e.target.value })}
+                          placeholder="เช่น พุทธศาสตรมหาบัณฑิต (พระธรรมทูต) / พธ.ม. (พระธรรมทูต)"
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {t("curriculum.degreeTitleEn")} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.degreeTitleEn}
+                          onChange={(e) => setFormData({ ...formData, degreeTitleEn: e.target.value })}
+                          placeholder="e.g. Master of Buddhism (Dhammaduta) / M.B. (Dhammaduta)"
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {t("curriculum.totalCredits")}
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          required
+                          value={formData.totalCredits}
+                          onChange={(e) => setFormData({ ...formData, totalCredits: Number(e.target.value) })}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {formData.degreeLevel === "TRAINING"
+                            ? t("curriculum.durationMonths")
+                            : t("curriculum.durationYears")}
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          max={formData.degreeLevel === "TRAINING" ? 120 : 10}
+                          required
+                          value={formData.durationYears}
+                          onChange={(e) => setFormData({ ...formData, durationYears: Number(e.target.value) })}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-foreground mb-1">
+                          {t("curriculum.revisedYear")}
+                        </label>
+                        <input
+                          type="number"
+                          min={2500}
+                          max={2650}
+                          required
+                          value={formData.revisedYear}
+                          onChange={(e) => setFormData({ ...formData, revisedYear: Number(e.target.value) })}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <input
+                        type="checkbox"
+                        id="isActive"
+                        checked={formData.isActive}
+                        onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                        className="h-4 w-4 rounded border-input"
+                      />
+                      <label htmlFor="isActive" className="text-sm font-medium text-foreground">
+                        {t("curriculum.active")}
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: PHILOSOPHY & OBJECTIVES */}
+                {activeTab === "philosophy" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.philosophyTh")}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.details.philosophyTh}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, philosophyTh: e.target.value },
+                          })
+                        }
+                        placeholder="มุ่งสร้างบัณฑิตให้มีความรู้ความเข้าใจหลักพุทธธรรมและศาสตร์สมัยใหม่..."
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.philosophyEn")}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.details.philosophyEn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, philosophyEn: e.target.value },
+                          })
+                        }
+                        placeholder="Aims to produce graduates who possess knowledge and understanding of Buddhist teachings..."
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          {t("curriculum.objectives")} (ไทย)
+                        </label>
+                        <span className="text-[11px] text-muted-foreground">1 บรรทัด = 1 ข้อ</span>
+                      </div>
+                      <textarea
+                        rows={5}
+                        value={formData.details.objectivesTh}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, objectivesTh: e.target.value },
+                          })
+                        }
+                        placeholder="1. เพื่อผลิตมหาบัณฑิตที่มีความรู้ความเข้าใจพระไตรปิฎกและหลักพุทธธรรมอย่างลึกซึ้ง&#10;2. เพื่อพัฒนาทักษะการเผยแผ่พระพุทธศาสนาในระดับสากล&#10;3. เพื่อสร้างนักวิจัยและนวัตกรรมการเผยแผ่สู่สังคมสันติสุข"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          {t("curriculum.objectives")} (English)
+                        </label>
+                        <span className="text-[11px] text-muted-foreground">1 line per item</span>
+                      </div>
+                      <textarea
+                        rows={4}
+                        value={formData.details.objectivesEn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, objectivesEn: e.target.value },
+                          })
+                        }
+                        placeholder="1. To produce graduates with profound knowledge of Tipitaka and Dhamma.&#10;2. To cultivate Dhammaduta leadership skills in international contexts."
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: CAREERS & ADMISSIONS */}
+                {activeTab === "careers" && (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          {t("curriculum.careerPaths")} (ไทย)
+                        </label>
+                        <span className="text-[11px] text-muted-foreground">1 บรรทัด = 1 อาชีพ</span>
+                      </div>
+                      <textarea
+                        rows={6}
+                        value={formData.details.careerPathsTh}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, careerPathsTh: e.target.value },
+                          })
+                        }
+                        placeholder="พระธรรมทูตทั้งในและต่างประเทศ&#10;นักวิชาการศาสนา / อาจารย์ประจำสาขาวิชาพระพุทธศาสนา&#10;นักเผยแผ่พระพุทธศาสนาและวิปัสสนาจารย์&#10;เจ้าหน้าที่องค์กรพระพุทธศาสนาระดับนานาชาติ"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-semibold text-foreground">
+                          {t("curriculum.careerPaths")} (English)
+                        </label>
+                        <span className="text-[11px] text-muted-foreground">1 line per career</span>
+                      </div>
+                      <textarea
+                        rows={4}
+                        value={formData.details.careerPathsEn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, careerPathsEn: e.target.value },
+                          })
+                        }
+                        placeholder="Dhammaduta Monk / Buddhist Missionary overseas&#10;Buddhist Academic / University Lecturer&#10;Meditation Teacher / Spiritual Counselor"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.admissionCriteriaTh")}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.details.admissionCriteriaTh}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, admissionCriteriaTh: e.target.value },
+                          })
+                        }
+                        placeholder="สำเร็จการศึกษาระดับปริญญาตรี มีเกรดเฉลี่ยสะสมไม่ต่ำกว่า 2.50 หรือมีประสบการณ์ทำงานที่เกี่ยวข้องอย่างน้อย 2 ปี หรือเปรียญธรรม 9 ประโยค..."
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.admissionCriteriaEn")}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.details.admissionCriteriaEn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, admissionCriteriaEn: e.target.value },
+                          })
+                        }
+                        placeholder="Hold a Bachelor's degree with a minimum GPA of 2.50 or at least 2 years of relevant experience..."
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.englishProficiency")}
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formData.details.englishProficiencyRequirements}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, englishProficiencyRequirements: e.target.value },
+                          })
+                        }
+                        placeholder="MCU-GET >= 240, TOEFL PBT >= 550, IELTS >= 5.5, CU-TEP >= 70 หรือ TU-GET >= 550"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 4: STUDY PLANS & DOCUMENTS */}
+                {activeTab === "plans" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.studyPlansSummaryTh")}
+                      </label>
+                      <textarea
+                        rows={4}
+                        value={formData.details.studyPlansSummaryTh}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, studyPlansSummaryTh: e.target.value },
+                          })
+                        }
+                        placeholder="แผน 1 แบบ 1.1: ทำวิทยานิพนธ์อย่างเดียว 39 หน่วยกิต&#10;แผน 1 แบบ 1.2: ศึกษารายวิชา 27 หน่วยกิต และทำวิทยานิพนธ์ 12 หน่วยกิต&#10;แผน 2: ศึกษารายวิชา 33 หน่วยกิต และสารนิพนธ์ 6 หน่วยกิต"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.studyPlansSummaryEn")}
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.details.studyPlansSummaryEn}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, studyPlansSummaryEn: e.target.value },
+                          })
+                        }
+                        placeholder="Plan 1.1: Thesis only 39 credits&#10;Plan 1.2: Coursework 27 credits + Thesis 12 credits&#10;Plan 2: Coursework 33 credits + Independent Study 6 credits"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background resize-y font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.tuitionFeeEstimate")}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.details.tuitionFeeEstimate}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            details: { ...formData.details, tuitionFeeEstimate: e.target.value },
+                          })
+                        }
+                        placeholder="เช่น ประมาณ 120,000 บาท ตลอดหลักสูตร (ภาคการศึกษาละประมาณ 30,000 บาท)"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1">
+                        {t("curriculum.brochure")}
+                      </label>
+                      <input
+                        type="url"
+                        value={formData.brochureUrl}
+                        onChange={(e) => setFormData({ ...formData, brochureUrl: e.target.value })}
+                        placeholder="https://.../tqf2-curriculum.pdf"
+                        className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+                      />
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {locale === "th"
+                          ? "ลิงก์ไฟล์ PDF เล่มหลักสูตร มคอ. 2 เพื่อให้นิสิตหรือผู้สนใจดาวน์โหลด"
+                          : "URL link to official TQF 2 brochure PDF document"}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {t("curriculum.degreeLevel")}
-                  </label>
-                  <select
-                    value={formData.degreeLevel}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        degreeLevel: e.target.value as "BACHELOR" | "MASTER" | "DOCTORATE" | "CERTIFICATE" | "TRAINING",
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-border bg-muted/20">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {activeTab === "basic"
+                      ? "1/4 ข้อมูลพื้นฐาน"
+                      : activeTab === "philosophy"
+                      ? "2/4 ปรัชญาและวัตถุประสงค์"
+                      : activeTab === "careers"
+                      ? "3/4 อาชีพและคุณสมบัติ"
+                      : "4/4 แผนการศึกษาและเอกสาร"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setDialogOpen(false)}
                   >
-                    <option value="BACHELOR">{t("curriculum.bachelor")}</option>
-                    <option value="MASTER">{t("curriculum.master")}</option>
-                    <option value="DOCTORATE">{t("curriculum.doctorate")}</option>
-                    <option value="CERTIFICATE">{t("curriculum.certificate")}</option>
-                    <option value="TRAINING">{t("curriculum.training")}</option>
-                  </select>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={pending}>
+                    {pending ? "Saving..." : "Save"}
+                  </Button>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {t("curriculum.programCode")}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.programCode}
-                    onChange={(e) => setFormData({ ...formData, programCode: e.target.value })}
-                    placeholder="e.g. CS-2569"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {t("curriculum.nameTh")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nameTh}
-                  onChange={(e) => setFormData({ ...formData, nameTh: e.target.value })}
-                  placeholder="หลักสูตรวิทยาศาสตรบัณฑิต..."
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {t("curriculum.nameEn")}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.nameEn}
-                  onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
-                  placeholder="Bachelor of Science Program in..."
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {t("curriculum.degreeTitleTh")}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.degreeTitleTh}
-                    onChange={(e) => setFormData({ ...formData, degreeTitleTh: e.target.value })}
-                    placeholder="วท.บ. (วิทยาการคอมพิวเตอร์)"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {t("curriculum.degreeTitleEn")}
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.degreeTitleEn}
-                    onChange={(e) => setFormData({ ...formData, degreeTitleEn: e.target.value })}
-                    placeholder="B.Sc. (Computer Science)"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {t("curriculum.totalCredits")}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    required
-                    value={formData.totalCredits}
-                    onChange={(e) => setFormData({ ...formData, totalCredits: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {formData.degreeLevel === "TRAINING"
-                      ? t("curriculum.durationMonths")
-                      : t("curriculum.durationYears")}
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={formData.degreeLevel === "TRAINING" ? 120 : 10}
-                    required
-                    value={formData.durationYears}
-                    onChange={(e) => setFormData({ ...formData, durationYears: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-foreground mb-1">
-                    {t("curriculum.revisedYear")}
-                  </label>
-                  <input
-                    type="number"
-                    min={2500}
-                    max={2650}
-                    required
-                    value={formData.revisedYear}
-                    onChange={(e) => setFormData({ ...formData, revisedYear: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
-                  {t("curriculum.brochure")}
-                </label>
-                <input
-                  type="url"
-                  value={formData.brochureUrl}
-                  onChange={(e) => setFormData({ ...formData, brochureUrl: e.target.value })}
-                  placeholder="https://.../brochure.pdf"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="h-4 w-4 rounded border-input"
-                />
-                <label htmlFor="isActive" className="text-sm font-medium text-foreground">
-                  {t("curriculum.active")}
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={pending}>
-                  {pending ? "Saving..." : "Save"}
-                </Button>
               </div>
             </form>
           </div>

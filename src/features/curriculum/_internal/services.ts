@@ -1,5 +1,5 @@
 import { prisma } from "@/shared/lib/infra/prisma";
-import type { DegreeLevel } from "@/generated/prisma";
+import type { Prisma, DegreeLevel } from "@/generated/prisma";
 import type { CreateCurriculumInput, UpdateCurriculumInput } from "./validations";
 
 export interface CurriculumCourseDto {
@@ -25,6 +25,22 @@ export interface CurriculumDepartmentSummary {
   nameEn: string;
 }
 
+export interface CurriculumDetails {
+  philosophyTh?: string;
+  philosophyEn?: string;
+  objectivesTh?: string[];
+  objectivesEn?: string[];
+  careerPathsTh?: string[];
+  careerPathsEn?: string[];
+  admissionCriteriaTh?: string;
+  admissionCriteriaEn?: string;
+  englishProficiencyRequirements?: string;
+  studyPlansSummaryTh?: string;
+  studyPlansSummaryEn?: string;
+  tuitionFeeEstimate?: string;
+  [key: string]: unknown;
+}
+
 export interface CurriculumDto {
   id: string;
   tenantId: string;
@@ -39,6 +55,7 @@ export interface CurriculumDto {
   durationYears: number;
   revisedYear: number;
   brochureUrl: string | null;
+  details?: CurriculumDetails | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -180,6 +197,7 @@ export async function createCurriculum(
       durationYears: input.durationYears,
       revisedYear: input.revisedYear,
       brochureUrl: input.brochureUrl || null,
+      details: (input.details ?? {}) as unknown as Prisma.InputJsonObject,
       isActive: input.isActive,
     },
     include: {
@@ -214,6 +232,7 @@ export async function updateCurriculum(
       durationYears: input.durationYears,
       revisedYear: input.revisedYear,
       brochureUrl: input.brochureUrl || null,
+      details: (input.details ?? {}) as unknown as Prisma.InputJsonObject,
       isActive: input.isActive,
     },
     include: {

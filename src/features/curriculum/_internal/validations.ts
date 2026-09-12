@@ -2,6 +2,21 @@ import { z } from "zod";
 
 export const degreeLevelSchema = z.enum(["BACHELOR", "MASTER", "DOCTORATE", "CERTIFICATE", "TRAINING"]);
 
+export const curriculumDetailsSchema = z.object({
+  philosophyTh: z.string().trim().max(3000).default(""),
+  philosophyEn: z.string().trim().max(3000).default(""),
+  objectivesTh: z.array(z.string().trim()).default([]),
+  objectivesEn: z.array(z.string().trim()).default([]),
+  careerPathsTh: z.array(z.string().trim()).default([]),
+  careerPathsEn: z.array(z.string().trim()).default([]),
+  admissionCriteriaTh: z.string().trim().max(3000).default(""),
+  admissionCriteriaEn: z.string().trim().max(3000).default(""),
+  englishProficiencyRequirements: z.string().trim().max(2000).default(""),
+  studyPlansSummaryTh: z.string().trim().max(3000).default(""),
+  studyPlansSummaryEn: z.string().trim().max(3000).default(""),
+  tuitionFeeEstimate: z.string().trim().max(500).default(""),
+});
+
 export const createCurriculumSchema = z.object({
   departmentId: z.string().uuid().optional().nullable().or(z.literal("")),
   degreeLevel: degreeLevelSchema.default("BACHELOR"),
@@ -14,12 +29,15 @@ export const createCurriculumSchema = z.object({
   durationYears: z.coerce.number().int().min(0).max(120).default(4),
   revisedYear: z.coerce.number().int().min(2500).max(2650),
   brochureUrl: z.string().url().optional().nullable().or(z.literal("")),
+  details: curriculumDetailsSchema.optional(),
   isActive: z.boolean().default(true),
 });
 
 export const updateCurriculumSchema = createCurriculumSchema.extend({
   id: z.string().uuid(),
 });
+
+export type CurriculumDetailsInput = z.infer<typeof curriculumDetailsSchema>;
 
 export const createCourseSchema = z.object({
   courseCode: z.string().min(3).max(50),

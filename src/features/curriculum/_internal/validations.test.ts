@@ -82,4 +82,36 @@ describe("curriculum validations", () => {
     };
     expect(updateCurriculumSchema.parse(valid).id).toBe("123e4567-e89b-12d3-a456-426614174000");
   });
+
+  it("validates curriculum with extended TQF 2 details", () => {
+    const validWithDetails = {
+      degreeLevel: "MASTER" as const,
+      programCode: "629-MBD",
+      nameTh: "หลักสูตรพุทธศาสตรมหาบัณฑิต สาขาวิชาพระธรรมทูต",
+      nameEn: "Master of Buddhism Program in Dhammaduta",
+      degreeTitleTh: "พุทธศาสตรมหาบัณฑิต (พระธรรมทูต)",
+      degreeTitleEn: "Master of Buddhism (Dhammaduta)",
+      totalCredits: 39,
+      durationYears: 2,
+      revisedYear: 2566,
+      details: {
+        philosophyTh: "มุ่งสร้างบัณฑิตให้มีความรู้ความเข้าใจหลักพุทธธรรมและศาสตร์สมัยใหม่",
+        philosophyEn: "Aims to produce graduates...",
+        objectivesTh: ["เพื่อผลิตมหาบัณฑิตที่มีความรู้...", "เพื่อพัฒนาทักษะ..."],
+        objectivesEn: ["To produce graduates..."],
+        careerPathsTh: ["พระธรรมทูต", "นักเผยแผ่พระพุทธศาสนา"],
+        careerPathsEn: ["Dhammaduta monk"],
+        admissionCriteriaTh: "สำเร็จการศึกษาระดับปริญญาตรี GPA >= 2.50",
+        admissionCriteriaEn: "Bachelor's degree GPA >= 2.50",
+        englishProficiencyRequirements: "MCU-GET >= 240, TOEFL >= 550",
+        studyPlansSummaryTh: "แผน 1.1: วิทยานิพนธ์ 39 หน่วยกิต\nแผน 1.2: รายวิชา 27 + วิทยานิพนธ์ 12",
+        studyPlansSummaryEn: "Plan 1.1: Thesis 39 credits",
+        tuitionFeeEstimate: "ประมาณ 120,000 บาท",
+      },
+    };
+    const parsed = createCurriculumSchema.parse(validWithDetails);
+    expect(parsed.details?.philosophyTh).toContain("มุ่งสร้างบัณฑิต");
+    expect(parsed.details?.careerPathsTh).toHaveLength(2);
+    expect(parsed.details?.englishProficiencyRequirements).toBe("MCU-GET >= 240, TOEFL >= 550");
+  });
 });

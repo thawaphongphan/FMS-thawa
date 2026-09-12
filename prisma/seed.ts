@@ -612,6 +612,92 @@ async function main() {
     },
   });
 
+  // --- Seed หลักสูตรพุทธศาสตรมหาบัณฑิต สาขาวิชาพระธรรมทูต (มคอ. 2 มจร) ---
+  const dhammadutaDetails = {
+    philosophyTh: "มุ่งสร้างบัณฑิตให้มีความรู้ความเข้าใจหลักพุทธธรรมและศาสตร์สมัยใหม่ โดยใช้กระบวนการสร้าง และประยุกต์ความรู้ใหม่เพื่อพัฒนาสังคมสันติสุขและนำพุทธปัญญาสู่สากล",
+    philosophyEn: "Aims to produce graduates who possess knowledge and understanding of Buddhist teachings and modern disciplines through the process of creating and applying new knowledge to develop a peaceful society and bring Buddhist wisdom to the international stage.",
+    objectivesTh: [
+      "เพื่อผลิตมหาบัณฑิตที่มีความรู้ความเข้าใจพระไตรปิฎก หลักพุทธธรรม และสามารถประยุกต์ศาสตร์สมัยใหม่ในการเผยแผ่พระพุทธศาสนา",
+      "เพื่อผลิตมหาบัณฑิตที่มีความสามารถในการวิจัยและสร้างสรรค์นวัตกรรมการเผยแผ่พระพุทธศาสนาในระดับชาติและนานาชาติ",
+      "เพื่อผลิตมหาบัณฑิตที่มีภาวะผู้นำ มีคุณธรรม จริยธรรม ปฏิบัติตามหลักธรรมทางพระพุทธศาสนา และอุทิศตนเพื่อประโยชน์สุขของสังคมโลก",
+      "เพื่อส่งเสริมและสนับสนุนภารกิจพระธรรมทูตในการเผยแผ่พระพุทธศาสนาทั้งในประเทศและต่างประเทศอย่างมีประสิทธิภาพ",
+    ],
+    objectivesEn: [
+      "To produce master's graduates with profound knowledge of Tipitaka, Dhamma principles, and capability to integrate modern disciplines for Dhamma propagation.",
+      "To cultivate research capacity and propagation innovation at both national and international levels.",
+      "To develop moral leadership, ethical dedication, and selflessness for global societal peace.",
+      "To effectively support and empower Dhammaduta missions domestically and internationally.",
+    ],
+    careerPathsTh: [
+      "พระธรรมทูตทั้งในประเทศและต่างประเทศ",
+      "นักเผยแผ่พระพุทธศาสนา / วิปัสสนาจารย์",
+      "อาจารย์ / นักวิชาการด้านพระพุทธศาสนาและปรัชญา",
+      "เจ้าหน้าที่องค์กรพระพุทธศาสนาระดับชาติและนานาชาติ",
+      "นักวิจัยด้านพุทธศาสน์ศึกษาและศาสตร์ร่วมสมัย",
+      "ที่ปรึกษาด้านคุณธรรม จริยธรรม และการพัฒนาจิตใจ",
+      "นักวิเทศสัมพันธ์ / เจ้าหน้าที่ประสานงานระหว่างประเทศ",
+      "นักสื่อสารมวลชนทางศาสนาและวัฒนธรรม",
+      "บุคลากรทางการศึกษาและสถาบันฝึกอบรม",
+      "ผู้นำกิจกรรมทางสังคมเพื่อสันติภาพ",
+      "ผู้บริหารองค์กรทางศาสนาและสาธารณกุศล",
+      "บรรณาธิการและนักเขียนวรรณกรรมทางพระพุทธศาสนา",
+      "วิทยากรและผู้จัดกระบวนการเรียนรู้ทางจิตปัญญา",
+    ],
+    careerPathsEn: [
+      "Dhammaduta monk / Buddhist missionary overseas",
+      "Buddhist propagation specialist & Meditation instructor",
+      "Academic lecturer in Buddhist studies and philosophy",
+      "International Buddhist organization officer",
+      "Researcher in Buddhist studies and multidisciplinary fields",
+      "Ethical, moral, and mindfulness development counselor",
+      "Foreign relations and international liaison officer",
+      "Religious and cultural media communicator",
+      "Educational and training institution personnel",
+      "Social activist and peace leadership facilitator",
+      "Religious and philanthropic organization executive",
+      "Buddhist literature editor and writer",
+      "Contemplative education facilitator and public speaker",
+    ],
+    admissionCriteriaTh: "1. เป็นพระภิกษุ สามเณร หรือคฤหัสถ์ สำเร็จการศึกษาระดับปริญญาตรีหรือเทียบเท่า จากสถาบันที่ ก.พ. หรือกระทรวง อว. หรือสภามหาวิทยาลัยรับรอง โดยมีแต้มระดับคะแนนเฉลี่ยสะสมไม่ต่ำกว่า 2.50\n2. กรณีมีแต้มเฉลี่ยสะสมต่ำกว่า 2.50 ต้องมีประสบการณ์ทำงานที่เกี่ยวข้องไม่น้อยกว่า 2 ปี โดยมีหนังสือรับรองจากต้นสังกัด\n3. หรือเป็นผู้สอบได้เปรียญธรรม 9 ประโยค (ป.ธ.9)\n4. ผ่านการสอบคัดเลือกข้อเขียนและสัมภาษณ์ตามเกณฑ์ของวิทยาลัย",
+    admissionCriteriaEn: "1. Monks, novices, or laypersons holding an accredited Bachelor's degree with GPAX >= 2.50.\n2. Or holding a Bachelor's degree with GPAX < 2.50 with at least 2 years of relevant work experience.\n3. Or graduates of Pali Studies Grade 9 (P.Th. 9).\n4. Pass the written and interview examinations according to university criteria.",
+    englishProficiencyRequirements: "มีผลการทดสอบความรู้ภาษาอังกฤษตามเกณฑ์ มจร เช่น MCU-GET >= 240, TOEFL (PBT) >= 550, IELTS >= 5.5, CU-TEP >= 70 หรือ TU-GET >= 550",
+    studyPlansSummaryTh: "แผน 1 แบบ 1.1: ทำวิทยานิพนธ์อย่างเดียว 39 หน่วยกิต (ต้องศึกษารายวิชาเสริมพื้นฐานโดยไม่นับหน่วยกิตตามที่กำหนด)\nแผน 1 แบบ 1.2: ศึกษารายวิชา 27 หน่วยกิต และทำวิทยานิพนธ์ 12 หน่วยกิต\nแผน 2: ศึกษารายวิชา 33 หน่วยกิต และทำสารนิพนธ์ 6 หน่วยกิต",
+    studyPlansSummaryEn: "Plan 1.1: Thesis only 39 credits (with non-credit remedial courses as required).\nPlan 1.2: Coursework 27 credits + Thesis 12 credits.\nPlan 2: Coursework 33 credits + Independent Study 6 credits.",
+    tuitionFeeEstimate: "ประมาณ 120,000 - 150,000 บาท ตลอดหลักสูตร (แบ่งชำระเป็นรายภาคการศึกษา)",
+  };
+
+  const currDhammaduta = await prisma.curriculum.upsert({
+    where: { tenantId_programCode_revisedYear: { tenantId: core.tenantId, programCode: "629-MBD", revisedYear: 2566 } },
+    update: {
+      departmentId: deptAcademic.id,
+      nameTh: "หลักสูตรพุทธศาสตรมหาบัณฑิต สาขาวิชาพระธรรมทูต (หลักสูตรใหม่ พ.ศ. 2566)",
+      nameEn: "Master of Buddhism Program in Dhammaduta (New Curriculum B.E. 2566)",
+      degreeTitleTh: "พุทธศาสตรมหาบัณฑิต (พระธรรมทูต) / พธ.ม. (พระธรรมทูต)",
+      degreeTitleEn: "Master of Buddhism (Dhammaduta) / M.B. (Dhammaduta)",
+      totalCredits: 39,
+      durationYears: 2,
+      brochureUrl: "https://dhammaduta.mcu.ac.th/curriculum/tqf2-dhammaduta-2566.pdf",
+      details: dhammadutaDetails,
+      isActive: true,
+    },
+    create: {
+      tenantId: core.tenantId,
+      departmentId: deptAcademic.id,
+      degreeLevel: "MASTER",
+      programCode: "629-MBD",
+      nameTh: "หลักสูตรพุทธศาสตรมหาบัณฑิต สาขาวิชาพระธรรมทูต (หลักสูตรใหม่ พ.ศ. 2566)",
+      nameEn: "Master of Buddhism Program in Dhammaduta (New Curriculum B.E. 2566)",
+      degreeTitleTh: "พุทธศาสตรมหาบัณฑิต (พระธรรมทูต) / พธ.ม. (พระธรรมทูต)",
+      degreeTitleEn: "Master of Buddhism (Dhammaduta) / M.B. (Dhammaduta)",
+      totalCredits: 39,
+      durationYears: 2,
+      revisedYear: 2566,
+      brochureUrl: "https://dhammaduta.mcu.ac.th/curriculum/tqf2-dhammaduta-2566.pdf",
+      details: dhammadutaDetails,
+      isActive: true,
+    },
+  });
+
   // --- Seed รายวิชา (Courses) ---
   const courseCS101 = await prisma.course.upsert({
     where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "CS101" } },
@@ -696,6 +782,139 @@ async function main() {
       descriptionEn: "Relational database design, query optimization, NoSQL systems, and transaction processing.",
     },
   });
+
+  // รายวิชาหลักสูตรพระธรรมทูต (มคอ. 2)
+  const course629101 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 101" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 101",
+      nameTh: "พระไตรปิฎกศึกษา",
+      nameEn: "Tipitaka Studies",
+      credits: "3(3-0-6)",
+      descriptionTh: "ศึกษาประวัติความเป็นมา โครงสร้าง และสาระสำคัญของพระไตรปิฎก ทั้งพระวินัยปิฎก พระสุตตันตปิฎก และพระอภิธรรมปิฎก เพื่อประยุกต์ในการเผยแผ่",
+      descriptionEn: "Historical development, structure, and essential doctrines of the Tipitaka: Vinaya Pitaka, Suttanta Pitaka, and Abhidhamma Pitaka for propagation.",
+    },
+  });
+
+  const course629102 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 102" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 102",
+      nameTh: "พุทธธรรมภาคภาษาอังกฤษ",
+      nameEn: "Buddhist Dhamma in English",
+      credits: "3(3-0-6)",
+      descriptionTh: "ศึกษาศัพท์แสง สำนวน และเทคนิคการอธิบายหลักพุทธธรรมเป็นภาษาอังกฤษเพื่อการสื่อสารในบริบทสากล",
+      descriptionEn: "Buddhist terminology, expressions, and pedagogical techniques in English for international communication.",
+    },
+  });
+
+  const course629103 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 103" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 103",
+      nameTh: "ระเบียบวิธีวิจัยสำหรับพระธรรมทูต",
+      nameEn: "Research Methodology for Dhammaduta",
+      credits: "3(3-0-6)",
+      descriptionTh: "ระเบียบวิธีวิจัยเชิงคุณภาพและเชิงปริมาณ การออกแบบการวิจัย และการประยุกต์ใช้เพื่อการพัฒนาภารกิจพระธรรมทูต",
+      descriptionEn: "Qualitative and quantitative research methodologies, research design, and applications for Dhammaduta missions.",
+    },
+  });
+
+  const course629106 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 106" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 106",
+      nameTh: "กัมมัฏฐาน",
+      nameEn: "Kammatthana (Meditation Practice)",
+      credits: "3(2-2-5)",
+      descriptionTh: "หลักการและวิธีปฏิบัติสมถกัมมัฏฐานและวิปัสสนากัมมัฏฐาน พร้อมทั้งการนำไปประยุกต์เพื่อการพัฒนาจิตใจและการสอนสมาธิภาวนา",
+      descriptionEn: "Theories and practices of Samatha and Vipassana Kammatthana, along with applications for mental cultivation and meditation coaching.",
+    },
+  });
+
+  const course629207 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 207" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 207",
+      nameTh: "หลักพุทธธรรมเพื่อการเผยแผ่",
+      nameEn: "Buddhist Principles for Propagation",
+      credits: "3(3-0-6)",
+      descriptionTh: "การวิเคราะห์หลักพุทธธรรมสำคัญและการประยุกต์ใช้เป็นยุทธศาสตร์และเครื่องมือในการเผยแผ่พระพุทธศาสนาสู่สังคมร่วมสมัย",
+      descriptionEn: "Analytical study of key Dhamma doctrines and their applications as strategies and instruments for contemporary Buddhist propagation.",
+    },
+  });
+
+  const course629208 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 208" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 208",
+      nameTh: "พระพุทธศาสนาและการต่างประเทศ",
+      nameEn: "Buddhism and Foreign Affairs",
+      credits: "3(3-0-6)",
+      descriptionTh: "บทบาทของพระพุทธศาสนาในเวทีความสัมพันธ์ระหว่างประเทศ องค์กรพุทธนานาชาติ กฎหมายและมารยาททางการทูตสำหรับพระธรรมทูต",
+      descriptionEn: "Roles of Buddhism in international relations, world Buddhist organizations, international law, and diplomatic etiquette for Dhammaduta.",
+    },
+  });
+
+  const course629309 = await prisma.course.upsert({
+    where: { tenantId_courseCode: { tenantId: core.tenantId, courseCode: "629 309" } },
+    update: {},
+    create: {
+      tenantId: core.tenantId,
+      courseCode: "629 309",
+      nameTh: "เทคโนโลยีสารสนเทศเพื่อการเผยแผ่พระธรรมทูต",
+      nameEn: "Information Technology for Dhammaduta",
+      credits: "3(2-2-5)",
+      descriptionTh: "การประยุกต์ใช้เทคโนโลยีดิจิทัล สื่อสังคมออนไลน์ ปัญญาประดิษฐ์ และนวัตกรรมดิจิทัลเพื่อการเผยแผ่พระพุทธศาสนายุคใหม่อย่างสร้างสรรค์",
+      descriptionEn: "Applied digital technologies, social media, AI, and creative digital innovations for modern Buddhist missionary missions.",
+    },
+  });
+
+  // เชื่อมโยงรายวิชาเข้ากับหลักสูตรพระธรรมทูต
+  const dhammadutaCourses = [
+    { courseId: course629101.id, category: "หมวดวิชาสัมพันธ์", year: 1, term: 1 },
+    { courseId: course629102.id, category: "หมวดวิชาสัมพันธ์", year: 1, term: 1 },
+    { courseId: course629103.id, category: "หมวดวิชาสัมพันธ์", year: 1, term: 1 },
+    { courseId: course629106.id, category: "หมวดวิชาเฉพาะ", year: 1, term: 2 },
+    { courseId: course629207.id, category: "หมวดวิชาเฉพาะ", year: 1, term: 2 },
+    { courseId: course629208.id, category: "หมวดวิชาเฉพาะ", year: 2, term: 1 },
+    { courseId: course629309.id, category: "หมวดวิชาเลือก", year: 2, term: 1 },
+  ];
+
+  for (const dc of dhammadutaCourses) {
+    await prisma.curriculumCourse.upsert({
+      where: {
+        curriculumId_courseId: {
+          curriculumId: currDhammaduta.id,
+          courseId: dc.courseId,
+        },
+      },
+      update: {
+        courseCategory: dc.category,
+        recommendedYear: dc.year,
+        recommendedTerm: dc.term,
+      },
+      create: {
+        curriculumId: currDhammaduta.id,
+        courseId: dc.courseId,
+        courseCategory: dc.category,
+        recommendedYear: dc.year,
+        recommendedTerm: dc.term,
+      },
+    });
+  }
 
   // --- Seed ภาคการศึกษา (Academic Terms) ---
   const term1 = await prisma.academicTerm.upsert({
