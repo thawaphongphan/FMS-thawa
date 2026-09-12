@@ -1,5 +1,5 @@
 import { prisma } from "@/shared/lib/infra/prisma";
-import { Prisma, type DegreeLevel } from "@/generated/prisma";
+import { Prisma, type DegreeLevel, type StudentStatus, type EmploymentStatus } from "@/generated/prisma";
 import { AppError } from "@/shared/lib/errors";
 import type { CreateCurriculumInput, UpdateCurriculumInput } from "./validations";
 
@@ -40,6 +40,47 @@ export interface CurriculumDetails {
   studyPlansSummaryEn?: string;
   tuitionFeeEstimate?: string;
   [key: string]: unknown;
+}
+
+export interface CurriculumStudentMemberDto {
+  id: string;
+  studentId: string;
+  titleTh: string;
+  firstNameTh: string;
+  lastNameTh: string;
+  titleEn: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  degreeLevel: DegreeLevel;
+  admissionYear: number;
+  currentYear: number;
+  status: StudentStatus;
+  email: string | null;
+  phoneNumber: string | null;
+}
+
+export interface CurriculumAlumniMemberDto {
+  id: string;
+  studentId: string;
+  titleTh: string;
+  firstNameTh: string;
+  lastNameTh: string;
+  titleEn: string;
+  firstNameEn: string;
+  lastNameEn: string;
+  degreeLevel: DegreeLevel;
+  graduationYear: number;
+  generation: number | null;
+  employmentStatus: EmploymentStatus;
+  jobTitle: string | null;
+  company: string | null;
+  email: string | null;
+  phoneNumber: string | null;
+}
+
+export interface CurriculumEnrolledMembersDto {
+  students: CurriculumStudentMemberDto[];
+  alumni: CurriculumAlumniMemberDto[];
 }
 
 export interface CurriculumDto {
@@ -312,3 +353,62 @@ export async function deleteCurriculum(tenantId: string, id: string): Promise<vo
     throw error;
   }
 }
+
+export async function getCurriculumEnrolledMembers(
+  tenantId: string,
+  curriculumId: string
+): Promise<CurriculumEnrolledMembersDto> {
+  const [students, alumni] = await Promise.all([
+    prisma.studentProfile.findMany({
+      where: { tenantId, curriculumId },
+      orderBy: [
+        { currentYear: "asc" },
+        { studentId: "asc" },
+      ],
+      select: {
+        id: true,
+        studentId: true,
+        titleTh: true,
+        firstNameTh: true,
+        lastNameTh: true,
+        titleEn: true,
+        firstNameEn: true,
+        lastNameEn: true,
+        degreeLevel: true,
+        admissionYear: true,
+        currentYear: true,
+        status: true,
+        email: true,
+        phoneNumber: true,
+      },
+    }),
+    prisma.alumniProfile.findMany({
+      where: { tenantId, curriculumId },
+      orderBy: [
+        { graduationYear: "desc" },
+        { studentId: "asc" },
+      ],
+      select: {
+        id: true,
+        studentId: true,
+        titleTh: true,
+        firstNameTh: true,
+        lastNameTh: true,
+        titleEn: true,
+        firstNameEn: true,
+        lastNameEn: true,
+        degreeLevel: true,
+        graduationYear: true,
+        generation: true,
+        employmentStatus: true,
+        jobTitle: true,
+        company: true,
+        email: true,
+        phoneNumber: true,
+      },
+    }),
+  ]);
+
+  return { students, alumni };
+}
+

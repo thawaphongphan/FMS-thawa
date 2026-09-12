@@ -12,7 +12,9 @@ import {
   updateCurriculum,
   deleteCurriculum,
   adminListCurricula,
+  getCurriculumEnrolledMembers,
   type CurriculumDto,
+  type CurriculumEnrolledMembersDto,
 } from "./services";
 
 export async function adminListCurriculaAction(): Promise<ActionResult<CurriculumDto[]>> {
@@ -81,3 +83,13 @@ export async function deleteCurriculumAction(id: string): Promise<ActionResult<v
     revalidatePath("/", "page");
   });
 }
+
+export async function getCurriculumEnrolledMembersAction(
+  curriculumId: string
+): Promise<ActionResult<CurriculumEnrolledMembersDto>> {
+  return runAction(async () => {
+    const ctx = await requirePermission(CURRICULUM_P.curriculumRead);
+    return getCurriculumEnrolledMembers(ctx.tenantId, curriculumId);
+  });
+}
+

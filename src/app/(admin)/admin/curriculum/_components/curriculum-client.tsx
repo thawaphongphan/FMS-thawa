@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   Plus,
@@ -18,13 +19,19 @@ import {
   Users,
   Download,
   Upload,
+  GraduationCap,
+  Mail,
+  Phone,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
-import type { CurriculumDto } from "@/features/curriculum";
+import type { CurriculumDto, CurriculumEnrolledMembersDto } from "@/features/curriculum";
 import {
   createCurriculumAction,
   updateCurriculumAction,
   deleteCurriculumAction,
+  getCurriculumEnrolledMembersAction,
 } from "@/features/curriculum/actions";
 import { Button } from "@/components/ui/button";
 
@@ -74,6 +81,46 @@ const initialFormData = {
   details: { ...initialFormDetails },
 };
 
+function getStudentStatusLabel(status: string, locale: string): string {
+  if (locale === "th") {
+    switch (status) {
+      case "ENROLLED": return "กำลังศึกษา";
+      case "ON_LEAVE": return "พักการเรียน";
+      case "GRADUATED": return "สำเร็จการศึกษา";
+      case "DISMISSED": return "พ้นสภาพ";
+      default: return status;
+    }
+  }
+  switch (status) {
+    case "ENROLLED": return "Enrolled";
+    case "ON_LEAVE": return "On Leave";
+    case "GRADUATED": return "Graduated";
+    case "DISMISSED": return "Dismissed";
+    default: return status;
+  }
+}
+
+function getEmploymentStatusLabel(status: string, locale: string): string {
+  if (locale === "th") {
+    switch (status) {
+      case "EMPLOYED": return "มีงานทำ / ทำงานประจำ";
+      case "STUDYING": return "ศึกษาต่อระดับสูงขึ้น";
+      case "ENTREPRENEUR": return "ธุรกิจส่วนตัว / สตาร์ทอัพ";
+      case "JOB_SEEKING": return "กำลังหางาน";
+      case "OTHER": return "อื่นๆ";
+      default: return status;
+    }
+  }
+  switch (status) {
+    case "EMPLOYED": return "Employed";
+    case "STUDYING": return "Higher Education";
+    case "ENTREPRENEUR": return "Entrepreneur";
+    case "JOB_SEEKING": return "Job Seeking";
+    case "OTHER": return "Other";
+    default: return status;
+  }
+}
+
 export function CurriculumClient({
   initialCurricula,
   departments = [],
@@ -100,6 +147,33 @@ export function CurriculumClient({
 
   // Form State
   const [formData, setFormData] = useState(initialFormData);
+
+  // Enrolled Members Modal State
+  const [membersModalCurriculum, setMembersModalCurriculum] = useState<CurriculumDto | null>(null);
+  const [membersData, setMembersData] = useState<CurriculumEnrolledMembersDto | null>(null);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [membersTab, setMembersTab] = useState<"students" | "alumni">("students");
+  const [membersSearch, setMembersSearch] = useState("");
+
+  const openMembersModal = async (curriculum: CurriculumDto, initialTab: "students" | "alumni") => {
+    setMembersModalCurriculum(curriculum);
+    setMembersTab(initialTab);
+    setMembersSearch("");
+    setLoadingMembers(true);
+    setMembersData(null);
+    try {
+      const res = await getCurriculumEnrolledMembersAction(curriculum.id);
+      if (res.ok) {
+        setMembersData(res.data);
+      } else {
+        toast.error(res.error.message || "Failed to load members");
+      }
+    } catch {
+      toast.error("Failed to load members");
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
 
   const openCreateDialog = () => {
     setEditingCurriculum(null);
@@ -370,6 +444,34 @@ export function CurriculumClient({
     return matchesSearch && matchesLevel && matchesDept;
   });
 
+  const filteredStudents = (membersData?.students ?? []).filter((s) => {
+    if (!membersSearch.trim()) return true;
+    const q = membersSearch.toLowerCase();
+    const fullNameTh = `${s.titleTh} ${s.firstNameTh} ${s.lastNameTh}`.toLowerCase();
+    const fullNameEn = `${s.titleEn} ${s.firstNameEn} ${s.lastNameEn}`.toLowerCase();
+    return (
+      s.studentId.toLowerCase().includes(q) ||
+      fullNameTh.includes(q) ||
+      fullNameEn.includes(q) ||
+      (s.email && s.email.toLowerCase().includes(q))
+    );
+  });
+
+  const filteredAlumni = (membersData?.alumni ?? []).filter((a) => {
+    if (!membersSearch.trim()) return true;
+    const q = membersSearch.toLowerCase();
+    const fullNameTh = `${a.titleTh} ${a.firstNameTh} ${a.lastNameTh}`.toLowerCase();
+    const fullNameEn = `${a.titleEn} ${a.firstNameEn} ${a.lastNameEn}`.toLowerCase();
+    return (
+      a.studentId.toLowerCase().includes(q) ||
+      fullNameTh.includes(q) ||
+      fullNameEn.includes(q) ||
+      (a.company && a.company.toLowerCase().includes(q)) ||
+      (a.jobTitle && a.jobTitle.toLowerCase().includes(q)) ||
+      (a.email && a.email.toLowerCase().includes(q))
+    );
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -474,16 +576,26 @@ export function CurriculumClient({
                         {((item._count?.studentProfiles ?? 0) > 0 || (item._count?.alumniProfiles ?? 0) > 0) && (
                           <div className="flex items-center gap-1.5 text-[11px]">
                             {(item._count?.studentProfiles ?? 0) > 0 && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800/60 font-medium">
+                              <button
+                                type="button"
+                                onClick={() => openMembersModal(item, "students")}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/60 font-medium hover:bg-blue-100 dark:hover:bg-blue-900/60 hover:shadow-xs active:scale-95 transition-all cursor-pointer"
+                                title={locale === "th" ? `คลิกเพื่อดูรายชื่อนิสิต (${item._count?.studentProfiles} คน)` : `Click to view ${item._count?.studentProfiles} students`}
+                              >
                                 <Users className="h-3 w-3" />
-                                {item._count?.studentProfiles} {t("curriculum.students")}
-                              </span>
+                                <span>{item._count?.studentProfiles} {t("curriculum.students")}</span>
+                              </button>
                             )}
                             {(item._count?.alumniProfiles ?? 0) > 0 && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/60 font-medium">
-                                <Users className="h-3 w-3" />
-                                {item._count?.alumniProfiles} {t("curriculum.alumni")}
-                              </span>
+                              <button
+                                type="button"
+                                onClick={() => openMembersModal(item, "alumni")}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/60 font-medium hover:bg-purple-100 dark:hover:bg-purple-900/60 hover:shadow-xs active:scale-95 transition-all cursor-pointer"
+                                title={locale === "th" ? `คลิกเพื่อดูรายชื่อศิษย์เก่า (${item._count?.alumniProfiles} คน)` : `Click to view ${item._count?.alumniProfiles} alumni`}
+                              >
+                                <GraduationCap className="h-3.5 w-3.5" />
+                                <span>{item._count?.alumniProfiles} {t("curriculum.alumni")}</span>
+                              </button>
                             )}
                           </div>
                         )}
@@ -1159,6 +1271,361 @@ export function CurriculumClient({
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Enrolled Members Modal */}
+      {membersModalCurriculum && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="flex flex-col w-full max-w-5xl max-h-[90vh] bg-card rounded-2xl shadow-2xl border border-border overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-foreground">
+                      {t("curriculum.enrolledTitle")}
+                    </h2>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded-md bg-muted text-foreground font-semibold border border-border">
+                      {membersModalCurriculum.programCode}
+                    </span>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      {membersModalCurriculum.degreeLevel}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {locale === "th" ? membersModalCurriculum.nameTh : membersModalCurriculum.nameEn}
+                    {membersModalCurriculum.department && (
+                      <span className="ml-2 font-normal">
+                        • {locale === "th" ? membersModalCurriculum.department.nameTh : membersModalCurriculum.department.nameEn}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMembersModalCurriculum(null)}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition cursor-pointer"
+                title={t("curriculum.close")}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Controls Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-3 border-b border-border bg-background">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMembersTab("students")}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    membersTab === "students"
+                      ? "bg-blue-600 text-white shadow-xs"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  <span>{t("curriculum.tabStudents")}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono ${
+                      membersTab === "students" ? "bg-white/20 text-white" : "bg-background text-foreground border border-border"
+                    }`}
+                  >
+                    {membersData?.students.length ?? membersModalCurriculum._count?.studentProfiles ?? 0}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMembersTab("alumni")}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    membersTab === "alumni"
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  <span>{t("curriculum.tabAlumni")}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[11px] font-mono ${
+                      membersTab === "alumni" ? "bg-white/20 text-white" : "bg-background text-foreground border border-border"
+                    }`}
+                  >
+                    {membersData?.alumni.length ?? membersModalCurriculum._count?.alumniProfiles ?? 0}
+                  </span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1 sm:w-72">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder={t("curriculum.searchMembers")}
+                    value={membersSearch}
+                    onChange={(e) => setMembersSearch(e.target.value)}
+                    className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                  {membersSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setMembersSearch("")}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                {membersTab === "students" ? (
+                  <Link
+                    href="/admin/students"
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition whitespace-nowrap"
+                  >
+                    <span>{t("curriculum.viewAllStudents")}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/admin/alumni"
+                    target="_blank"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition whitespace-nowrap"
+                  >
+                    <span>{t("curriculum.viewAllAlumni")}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Body / Table */}
+            <div className="flex-1 overflow-y-auto min-h-[300px] p-0">
+              {loadingMembers ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+                  <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                  <span className="text-xs">{t("curriculum.loadingMembers")}</span>
+                </div>
+              ) : membersTab === "students" ? (
+                filteredStudents.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <Users className="h-10 w-10 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-medium">{t("curriculum.noStudents")}</p>
+                    {membersSearch && (
+                      <p className="text-xs text-muted-foreground/70 mt-1">
+                        {locale === "th" ? `ไม่พบผลการค้นหาสำหรับ "${membersSearch}"` : `No matches for "${membersSearch}"`}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-border bg-muted/40 sticky top-0 font-semibold text-muted-foreground">
+                        <tr>
+                          <th className="px-4 py-3">{t("curriculum.studentId")}</th>
+                          <th className="px-4 py-3">{t("curriculum.studentName")}</th>
+                          <th className="px-4 py-3">{t("curriculum.studentYear")}</th>
+                          <th className="px-4 py-3">{t("curriculum.status")}</th>
+                          <th className="px-4 py-3">{t("curriculum.contact")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {filteredStudents.map((student) => {
+                          const statusColor =
+                            student.status === "ENROLLED"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                              : student.status === "ON_LEAVE"
+                              ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                              : student.status === "GRADUATED"
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                              : "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border-rose-200 dark:border-rose-800";
+
+                          return (
+                            <tr key={student.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-2.5 whitespace-nowrap font-mono font-semibold text-foreground">
+                                {student.studentId}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="font-semibold text-foreground">
+                                  {student.titleTh} {student.firstNameTh} {student.lastNameTh}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {student.titleEn} {student.firstNameEn} {student.lastNameEn}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className="font-medium text-foreground">
+                                  {locale === "th" ? `ชั้นปีที่ ${student.currentYear}` : `Year ${student.currentYear}`}
+                                </span>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {locale === "th" ? `เข้าศึกษาปี ${student.admissionYear}` : `Admitted ${student.admissionYear}`}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusColor}`}>
+                                  {getStudentStatusLabel(student.status, locale)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+                                  {student.email && (
+                                    <span className="flex items-center gap-1">
+                                      <Mail className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                                      <span className="truncate max-w-[180px]">{student.email}</span>
+                                    </span>
+                                  )}
+                                  {student.phoneNumber && (
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                                      <span>{student.phoneNumber}</span>
+                                    </span>
+                                  )}
+                                  {!student.email && !student.phoneNumber && (
+                                    <span className="text-muted-foreground/40 italic">-</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              ) : (
+                filteredAlumni.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                    <GraduationCap className="h-10 w-10 text-muted-foreground/40 mb-2" />
+                    <p className="text-sm font-medium">{t("curriculum.noAlumni")}</p>
+                    {membersSearch && (
+                      <p className="text-xs text-muted-foreground/70 mt-1">
+                        {locale === "th" ? `ไม่พบผลการค้นหาสำหรับ "${membersSearch}"` : `No matches for "${membersSearch}"`}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-border bg-muted/40 sticky top-0 font-semibold text-muted-foreground">
+                        <tr>
+                          <th className="px-4 py-3">{t("curriculum.studentId")}</th>
+                          <th className="px-4 py-3">{t("curriculum.studentName")}</th>
+                          <th className="px-4 py-3">{t("curriculum.graduationYear")}</th>
+                          <th className="px-4 py-3">{t("curriculum.employmentStatus")}</th>
+                          <th className="px-4 py-3">{t("curriculum.jobAndCompany")}</th>
+                          <th className="px-4 py-3">{t("curriculum.contact")}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {filteredAlumni.map((alumnus) => {
+                          const statusColor =
+                            alumnus.employmentStatus === "EMPLOYED"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                              : alumnus.employmentStatus === "STUDYING"
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800"
+                              : alumnus.employmentStatus === "ENTREPRENEUR"
+                              ? "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                              : alumnus.employmentStatus === "JOB_SEEKING"
+                              ? "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+                              : "bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700";
+
+                          return (
+                            <tr key={alumnus.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="px-4 py-2.5 whitespace-nowrap font-mono font-semibold text-foreground">
+                                {alumnus.studentId}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="font-semibold text-foreground">
+                                  {alumnus.titleTh} {alumnus.firstNameTh} {alumnus.lastNameTh}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                  {alumnus.titleEn} {alumnus.firstNameEn} {alumnus.lastNameEn}
+                                </div>
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className="font-medium text-foreground">
+                                  {locale === "th" ? `ปี พ.ศ. ${alumnus.graduationYear}` : `Class of ${alumnus.graduationYear}`}
+                                </span>
+                                {alumnus.generation && (
+                                  <div className="text-[11px] text-muted-foreground">
+                                    {t("curriculum.generation")} {alumnus.generation}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium border ${statusColor}`}>
+                                  {getEmploymentStatusLabel(alumnus.employmentStatus, locale)}
+                                </span>
+                              </td>
+                              <td className="px-4 py-2.5">
+                                {alumnus.jobTitle || alumnus.company ? (
+                                  <div>
+                                    {alumnus.jobTitle && (
+                                      <div className="font-medium text-foreground">{alumnus.jobTitle}</div>
+                                    )}
+                                    {alumnus.company && (
+                                      <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                        <Building2 className="h-3 w-3 shrink-0" />
+                                        <span>{alumnus.company}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground/40 italic">-</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5">
+                                <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground">
+                                  {alumnus.email && (
+                                    <span className="flex items-center gap-1">
+                                      <Mail className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                                      <span className="truncate max-w-[180px]">{alumnus.email}</span>
+                                    </span>
+                                  )}
+                                  {alumnus.phoneNumber && (
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3 text-muted-foreground/70 shrink-0" />
+                                      <span>{alumnus.phoneNumber}</span>
+                                    </span>
+                                  )}
+                                  {!alumnus.email && !alumnus.phoneNumber && (
+                                    <span className="text-muted-foreground/40 italic">-</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-6 py-3.5 border-t border-border bg-muted/20">
+              <div className="text-xs text-muted-foreground">
+                <span>{t("curriculum.totalMembers")}: </span>
+                <span className="font-semibold text-foreground">
+                  {membersTab === "students" ? filteredStudents.length : filteredAlumni.length}
+                </span>{" "}
+                <span>{t("curriculum.personsUnit")}</span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMembersModalCurriculum(null)}
+              >
+                {t("curriculum.close")}
+              </Button>
+            </div>
           </div>
         </div>
       )}
