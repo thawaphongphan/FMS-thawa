@@ -14,6 +14,7 @@ import {
   translateNewsWithAiAction,
 } from "@/features/news/actions";
 import { Button } from "@/components/ui/button";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 
 interface NewsClientProps {
   initialArticles: ArticleDto[];
@@ -88,7 +89,8 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
   };
 
   const handleAiTranslate = async () => {
-    if (!formData.titleTh.trim() || !formData.contentTh.trim()) {
+    const cleanContentTh = formData.contentTh.replace(/<[^>]*>/g, "").trim();
+    if (!formData.titleTh.trim() || !cleanContentTh) {
       toast.error(t("news.aiTranslateRequireThai"));
       return;
     }
@@ -126,7 +128,8 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.titleTh || !formData.titleEn || !formData.slug) {
+    const cleanContentTh = formData.contentTh.replace(/<[^>]*>/g, "").trim();
+    if (!formData.titleTh || !formData.titleEn || !formData.slug || !cleanContentTh) {
       toast.error(t("common.requiredFields"));
       return;
     }
@@ -377,7 +380,7 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
       {/* Create / Edit Dialog Modal */}
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-border/60 pb-4">
               <h2 className="text-lg font-bold text-foreground">
                 {editingArticle ? t("news.edit") : t("news.create")}
@@ -574,17 +577,20 @@ export function NewsClient({ initialArticles, categories, canManage }: NewsClien
                 />
               </div>
 
-              {/* Content TH */}
+              {/* Content TH (TinyMCE Rich Text Editor) */}
               <div>
                 <label className="block font-semibold text-foreground mb-1">
                   {t("news.contentTh")} *
                 </label>
-                <textarea
-                  rows={5}
-                  required
+                <RichTextEditor
                   value={formData.contentTh}
-                  onChange={(e) => setFormData({ ...formData, contentTh: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  onChange={(val) => setFormData((prev) => ({ ...prev, contentTh: val }))}
+                  placeholder={
+                    locale === "th"
+                      ? "พิมพ์เนื้อหาข่าว จัดรูปแบบข้อความ แทรกรูปภาพ หรือตารางได้ที่นี่..."
+                      : "Enter article content, format typography, insert images or tables..."
+                  }
+                  height={380}
                 />
               </div>
 

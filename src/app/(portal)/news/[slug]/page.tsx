@@ -104,10 +104,19 @@ export default async function NewsDetailPage({
       )}
 
       {/* Main Content */}
-      <div className="prose prose-neutral dark:prose-invert max-w-none text-base sm:text-lg leading-relaxed space-y-6">
-        {content.split("\n\n").map((para, i) => (
-          <p key={i} className="text-foreground/90">{para}</p>
-        ))}
+      <div className="prose prose-neutral dark:prose-invert max-w-none text-base sm:text-lg leading-relaxed">
+        {/<[a-z][\s\S]*>/i.test(content) ? (
+          <div
+            className="space-y-4 [&>p]:leading-relaxed [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:pl-5 [&>ol]:pl-5 [&>img]:rounded-xl [&>img]:max-w-full [&>table]:w-full [&>table]:border-collapse"
+            dangerouslySetInnerHTML={{ __html: content }}
+          />
+        ) : (
+          <div className="space-y-6">
+            {content.split("\n\n").map((para, i) => (
+              <p key={i} className="text-foreground/90">{para}</p>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Bottom Footer Actions */}

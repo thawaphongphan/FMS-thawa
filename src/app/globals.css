@@ -90,3 +90,12 @@
   animation: blink 1s step-end infinite;
 }
 
+/* TinyMCE dialogs & dropdown menus must sit above Tailwind modals */
+.tox-tinymce-aux {
+  z-index: 100000 !important;
+}
+
+.tox.tox-tinymce {
+  border: none !important;
+  border-radius: 0.5rem !important;
+}
