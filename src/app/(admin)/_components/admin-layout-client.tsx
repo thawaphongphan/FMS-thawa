@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { Loader2, User, Settings } from "lucide-react";
+import { Loader2, User, Settings, Globe } from "lucide-react";
 import { AdminShell, useBreadcrumbTailItems, type Crumb } from "@/shared/components/liyon";
 import { AdminSidebarNav } from "@/components/layout/admin-sidebar-nav";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
@@ -45,6 +45,7 @@ export function AdminLayoutClient({
   const breadcrumb: Crumb[] = chain.length === 0 && tail.length === 0 ? [] : [{ label: t("nav.home"), href: "/dashboard" }, ...chain.map((c) => ({ label: t(c.title), href: c.href })), ...tail];
   const ctx = { roles, permissions, isSuperAdmin };
   const links = [
+    { href: "/", label: t("nav.portal"), icon: <Globe className="h-4 w-4" /> },
     { href: "/me", label: t("account.profile"), icon: <User className="h-4 w-4" /> },
     ...(hasPermission(ctx, P.settingsManage) ? [{ href: "/settings", label: t("nav.settings"), icon: <Settings className="h-4 w-4" /> }] : []),
   ];
