@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Search, BookOpen, Check, X } from "lucide-react";
+import { Plus, Edit2, Trash2, Search, BookOpen, Check, X, Building2 } from "lucide-react";
 import { useLocale, useT } from "@/shared/lib/i18n/client";
 import type { CurriculumDto } from "@/features/curriculum";
 import {
@@ -13,20 +13,36 @@ import {
 } from "@/features/curriculum/actions";
 import { Button } from "@/components/ui/button";
 
+export interface DepartmentOption {
+  id: string;
+  code: string;
+  nameTh: string;
+  nameEn: string;
+}
+
 interface CurriculumClientProps {
   initialCurricula: CurriculumDto[];
+  departments?: DepartmentOption[];
   canManage: boolean;
 }
 
-export function CurriculumClient({ initialCurricula, canManage }: CurriculumClientProps) {
+export function CurriculumClient({
+  initialCurricula,
+  departments = [],
+  canManage,
+}: CurriculumClientProps) {
   const t = useT();
   const locale = useLocale();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
 
   const [curricula, setCurricula] = useState<CurriculumDto[]>(initialCurricula);
   const [search, setSearch] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("ALL");
+  const [departmentFilter, setDepartmentFilter] = useState<string>(
+    searchParams.get("departmentId") || "ALL"
+  );
 
   // Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -34,6 +50,7 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
 
   // Form State
   const [formData, setFormData] = useState({
+    departmentId: "",
     degreeLevel: "BACHELOR" as "BACHELOR" | "MASTER" | "DOCTORATE" | "CERTIFICATE" | "TRAINING",
     programCode: "",
     nameTh: "",
@@ -50,6 +67,7 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
   const openCreateDialog = () => {
     setEditingCurriculum(null);
     setFormData({
+      departmentId: "",
       degreeLevel: "BACHELOR",
       programCode: "",
       nameTh: "",
@@ -68,6 +86,7 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
   const openEditDialog = (item: CurriculumDto) => {
     setEditingCurriculum(item);
     setFormData({
+      departmentId: item.departmentId || "",
       degreeLevel: item.degreeLevel,
       programCode: item.programCode,
       nameTh: item.nameTh,
@@ -137,8 +156,12 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
       item.programCode.toLowerCase().includes(search.toLowerCase());
 
     const matchesLevel = levelFilter === "ALL" || item.degreeLevel === levelFilter;
+    const matchesDept =
+      departmentFilter === "ALL" ||
+      (departmentFilter === "NONE" && !item.departmentId) ||
+      item.departmentId === departmentFilter;
 
-    return matchesSearch && matchesLevel;
+    return matchesSearch && matchesLevel && matchesDept;
   });
 
   return (
@@ -188,6 +211,20 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
           <option value="CERTIFICATE">{t("curriculum.certificate")}</option>
           <option value="TRAINING">{t("curriculum.training")}</option>
         </select>
+
+        <select
+          value={departmentFilter}
+          onChange={(e) => setDepartmentFilter(e.target.value)}
+          className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        >
+          <option value="ALL">{t("curriculum.allDepartments")}</option>
+          <option value="NONE">{t("curriculum.noDepartment")}</option>
+          {departments.map((dept) => (
+            <option key={dept.id} value={dept.id}>
+              {dept.code} - {locale === "th" ? dept.nameTh : dept.nameEn}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Table */}
@@ -199,6 +236,7 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
                 <th className="px-4 py-3">{t("curriculum.degreeLevel")}</th>
                 <th className="px-4 py-3">{t("curriculum.programCode")}</th>
                 <th className="px-4 py-3">{t("curriculum.nameTh")}</th>
+                <th className="px-4 py-3">{t("curriculum.department")}</th>
                 <th className="px-4 py-3 text-center">{t("curriculum.totalCredits")}</th>
                 <th className="px-4 py-3 text-center">{t("curriculum.status")}</th>
                 {canManage && <th className="px-4 py-3 text-right">Actions</th>}
@@ -207,7 +245,7 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
             <tbody className="divide-y divide-border">
               {filteredCurricula.length === 0 ? (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={canManage ? 7 : 6} className="px-4 py-8 text-center text-muted-foreground">
                     {t("curriculum.empty")}
                   </td>
                 </tr>
@@ -226,6 +264,21 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
                     <td className="px-4 py-3">
                       <div className="font-semibold text-foreground">{item.nameTh}</div>
                       <div className="text-xs text-muted-foreground">{item.nameEn}</div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {item.department ? (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                          <Building2 className="h-3 w-3" />
+                          <span className="font-mono font-semibold">{item.department.code}</span>
+                          <span className="text-[11px] text-muted-foreground hidden md:inline">
+                            ({item.department.nameTh})
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          {t("curriculum.noDepartment")}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center whitespace-nowrap">
                       <span className="font-semibold">{item.totalCredits}</span> {t("curriculum.creditsUnit")}
@@ -293,6 +346,25 @@ export function CurriculumClient({ initialCurricula, canManage }: CurriculumClie
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Department selection */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1">
+                  {t("curriculum.department")}
+                </label>
+                <select
+                  value={formData.departmentId}
+                  onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="">{t("curriculum.selectDepartment")}</option>
+                  {departments.map((dept) => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.code} - {locale === "th" ? dept.nameTh : dept.nameEn}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-foreground mb-1">

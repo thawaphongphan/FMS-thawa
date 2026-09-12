@@ -3,6 +3,7 @@ import { z } from "zod";
 export const degreeLevelSchema = z.enum(["BACHELOR", "MASTER", "DOCTORATE", "CERTIFICATE", "TRAINING"]);
 
 export const createCurriculumSchema = z.object({
+  departmentId: z.string().uuid().optional().nullable().or(z.literal("")),
   degreeLevel: degreeLevelSchema.default("BACHELOR"),
   programCode: z.string().min(2).max(50),
   nameTh: z.string().min(3).max(255),

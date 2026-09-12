@@ -139,20 +139,20 @@ async function main() {
   });
 
   // คงภาควิชา CS/SE/DS เพื่อรองรับหลักสูตรตัวอย่าง
-  await prisma.department.upsert({
+  const deptCS = await prisma.department.upsert({
     where: { tenantId_code: { tenantId: core.tenantId, code: "CS" } },
-    update: {},
-    create: { tenantId: core.tenantId, code: "CS", nameTh: "ภาควิชาวิทยาการคอมพิวเตอร์", nameEn: "Department of Computer Science", orderIndex: 5 },
+    update: { description: "ภาควิชาที่มุ่งเน้นการวิจัยและพัฒนาซอฟต์แวร์ อัลกอริทึม และระบบสารสนเทศ", isActive: true },
+    create: { tenantId: core.tenantId, code: "CS", nameTh: "ภาควิชาวิทยาการคอมพิวเตอร์", nameEn: "Department of Computer Science", description: "ภาควิชาที่มุ่งเน้นการวิจัยและพัฒนาซอฟต์แวร์ อัลกอริทึม และระบบสารสนเทศ", orderIndex: 5, isActive: true },
   });
-  await prisma.department.upsert({
+  const deptSE = await prisma.department.upsert({
     where: { tenantId_code: { tenantId: core.tenantId, code: "SE" } },
-    update: {},
-    create: { tenantId: core.tenantId, code: "SE", nameTh: "ภาควิชาวิศวกรรมซอฟต์แวร์", nameEn: "Department of Software Engineering", orderIndex: 6 },
+    update: { description: "ภาควิชาวิศวกรรมซอฟต์แวร์ เน้นการสร้างระบบขนาดใหญ่และคุณภาพซอฟต์แวร์", isActive: true },
+    create: { tenantId: core.tenantId, code: "SE", nameTh: "ภาควิชาวิศวกรรมซอฟต์แวร์", nameEn: "Department of Software Engineering", description: "ภาควิชาวิศวกรรมซอฟต์แวร์ เน้นการสร้างระบบขนาดใหญ่และคุณภาพซอฟต์แวร์", orderIndex: 6, isActive: true },
   });
-  await prisma.department.upsert({
+  const deptDS = await prisma.department.upsert({
     where: { tenantId_code: { tenantId: core.tenantId, code: "DS" } },
-    update: {},
-    create: { tenantId: core.tenantId, code: "DS", nameTh: "ภาควิชาวิทยาการข้อมูลและปัญญาประดิษฐ์", nameEn: "Department of Data Science & AI", orderIndex: 7 },
+    update: { description: "ภาควิชาวิทยาการข้อมูลและปัญญาประดิษฐ์ มุ่งเน้น Machine Learning และการวิเคราะห์ข้อมูลขั้นสูง", isActive: true },
+    create: { tenantId: core.tenantId, code: "DS", nameTh: "ภาควิชาวิทยาการข้อมูลและปัญญาประดิษฐ์", nameEn: "Department of Data Science & AI", description: "ภาควิชาวิทยาการข้อมูลและปัญญาประดิษฐ์ มุ่งเน้น Machine Learning และการวิเคราะห์ข้อมูลขั้นสูง", orderIndex: 7, isActive: true },
   });
 
   // --- Seed บุคลากรและคณาจารย์วิทยาลัยพระธรรมทูต (15 ท่าน) ---
@@ -514,9 +514,10 @@ async function main() {
   // --- Seed หลักสูตรการศึกษา ---
   await prisma.curriculum.upsert({
     where: { tenantId_programCode_revisedYear: { tenantId: core.tenantId, programCode: "CS-2569", revisedYear: 2569 } },
-    update: {},
+    update: { departmentId: deptCS.id },
     create: {
       tenantId: core.tenantId,
+      departmentId: deptCS.id,
       degreeLevel: "BACHELOR",
       programCode: "CS-2569",
       nameTh: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์",
@@ -533,9 +534,10 @@ async function main() {
 
   await prisma.curriculum.upsert({
     where: { tenantId_programCode_revisedYear: { tenantId: core.tenantId, programCode: "SE-2568", revisedYear: 2568 } },
-    update: {},
+    update: { departmentId: deptSE.id },
     create: {
       tenantId: core.tenantId,
+      departmentId: deptSE.id,
       degreeLevel: "BACHELOR",
       programCode: "SE-2568",
       nameTh: "หลักสูตรวิศวกรรมศาสตรบัณฑิต สาขาวิชาวิศวกรรมซอฟต์แวร์",
@@ -552,9 +554,10 @@ async function main() {
 
   await prisma.curriculum.upsert({
     where: { tenantId_programCode_revisedYear: { tenantId: core.tenantId, programCode: "AI-2569", revisedYear: 2569 } },
-    update: {},
+    update: { departmentId: deptDS.id },
     create: {
       tenantId: core.tenantId,
+      departmentId: deptDS.id,
       degreeLevel: "MASTER",
       programCode: "AI-2569",
       nameTh: "หลักสูตรวิทยาศาสตรมหาบัณฑิต สาขาวิชาปัญญาประดิษฐ์และวิทยาการข้อมูล",
@@ -571,9 +574,10 @@ async function main() {
 
   await prisma.curriculum.upsert({
     where: { tenantId_programCode_revisedYear: { tenantId: core.tenantId, programCode: "CERT-FSW", revisedYear: 2569 } },
-    update: {},
+    update: { departmentId: deptSE.id },
     create: {
       tenantId: core.tenantId,
+      departmentId: deptSE.id,
       degreeLevel: "CERTIFICATE",
       programCode: "CERT-FSW",
       nameTh: "หลักสูตรประกาศนียบัตรการพัฒนาเว็บฟูลสแตกสมัยใหม่ (Full-Stack Web Development)",
@@ -590,9 +594,10 @@ async function main() {
 
   await prisma.curriculum.upsert({
     where: { tenantId_programCode_revisedYear: { tenantId: core.tenantId, programCode: "TRAIN-AI", revisedYear: 2569 } },
-    update: {},
+    update: { departmentId: deptAcademic.id },
     create: {
       tenantId: core.tenantId,
+      departmentId: deptAcademic.id,
       degreeLevel: "TRAINING",
       programCode: "TRAIN-AI",
       nameTh: "โครงการอบรมเชิงปฏิบัติการวิศวกรรมปัญญาประดิษฐ์และ Generative AI สำหรับองค์กร",

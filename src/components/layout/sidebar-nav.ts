@@ -1,9 +1,10 @@
-import { LayoutDashboard, Users, Settings, Layers, Newspaper, GraduationCap, BookOpen, CalendarDays, BarChart3, UserCheck, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Settings, Layers, Newspaper, GraduationCap, BookOpen, CalendarDays, BarChart3, UserCheck, Building2, type LucideIcon } from "lucide-react";
 import { hasPermission, P } from "@/features/identity";
 import { SAMPLE_P } from "@/features/sample";
 import { NEWS_P } from "@/features/news";
 import { STAFF_P } from "@/features/staff";
 import { CURRICULUM_P } from "@/features/curriculum";
+import { DEPARTMENT_P } from "@/features/department";
 import { SCHEDULE_P } from "@/features/schedule";
 import { STUDENTS_P } from "@/features/student-stats";
 import { ALUMNI_P } from "@/features/alumni";
@@ -24,7 +25,10 @@ export const sidebarGroups: NavGroup[] = [
   { label: "nav.group.overview", items: [{ title: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard }] },
   {
     label: "curriculum.nav",
-    items: [{ title: "curriculum.adminTitle", href: "/admin/curriculum", icon: BookOpen, permission: CURRICULUM_P.curriculumRead }],
+    items: [
+      { title: "department.adminTitle", href: "/admin/departments", icon: Building2, permission: DEPARTMENT_P.departmentRead },
+      { title: "curriculum.adminTitle", href: "/admin/curriculum", icon: BookOpen, permission: CURRICULUM_P.curriculumRead },
+    ],
   },
   {
     label: "schedule.nav",

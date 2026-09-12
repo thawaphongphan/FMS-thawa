@@ -18,9 +18,17 @@ export interface CurriculumCourseDto {
   };
 }
 
+export interface CurriculumDepartmentSummary {
+  id: string;
+  code: string;
+  nameTh: string;
+  nameEn: string;
+}
+
 export interface CurriculumDto {
   id: string;
   tenantId: string;
+  departmentId: string | null;
   degreeLevel: DegreeLevel;
   programCode: string;
   nameTh: string;
@@ -34,23 +42,38 @@ export interface CurriculumDto {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  department?: CurriculumDepartmentSummary | null;
   courses?: CurriculumCourseDto[];
 }
 
 export async function listPublicCurricula(
   tenantId: string,
-  degreeLevel?: DegreeLevel
+  degreeLevel?: DegreeLevel,
+  departmentId?: string
 ): Promise<CurriculumDto[]> {
-  const where: { tenantId: string; isActive: boolean; degreeLevel?: DegreeLevel } = {
+  const where: { tenantId: string; isActive: boolean; degreeLevel?: DegreeLevel; departmentId?: string } = {
     tenantId,
     isActive: true,
   };
   if (degreeLevel) {
     where.degreeLevel = degreeLevel;
   }
+  if (departmentId) {
+    where.departmentId = departmentId;
+  }
 
   const curricula = await prisma.curriculum.findMany({
     where,
+    include: {
+      department: {
+        select: {
+          id: true,
+          code: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
+    },
     orderBy: [
       { degreeLevel: "asc" },
       { revisedYear: "desc" },
@@ -85,6 +108,14 @@ export async function getCurriculumById(
   const curriculum = await prisma.curriculum.findFirst({
     where: { tenantId, id },
     include: {
+      department: {
+        select: {
+          id: true,
+          code: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
       courses: {
         include: {
           course: true,
@@ -101,9 +132,27 @@ export async function getCurriculumById(
   return curriculum as unknown as CurriculumDto;
 }
 
-export async function adminListCurricula(tenantId: string): Promise<CurriculumDto[]> {
+export async function adminListCurricula(
+  tenantId: string,
+  departmentId?: string
+): Promise<CurriculumDto[]> {
+  const where: { tenantId: string; departmentId?: string } = { tenantId };
+  if (departmentId) {
+    where.departmentId = departmentId;
+  }
+
   const list = await prisma.curriculum.findMany({
-    where: { tenantId },
+    where,
+    include: {
+      department: {
+        select: {
+          id: true,
+          code: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
+    },
     orderBy: [
       { degreeLevel: "asc" },
       { revisedYear: "desc" },
@@ -120,6 +169,7 @@ export async function createCurriculum(
   const created = await prisma.curriculum.create({
     data: {
       tenantId,
+      departmentId: input.departmentId || null,
       degreeLevel: input.degreeLevel,
       programCode: input.programCode,
       nameTh: input.nameTh,
@@ -132,6 +182,16 @@ export async function createCurriculum(
       brochureUrl: input.brochureUrl || null,
       isActive: input.isActive,
     },
+    include: {
+      department: {
+        select: {
+          id: true,
+          code: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
+    },
   });
   return created as CurriculumDto;
 }
@@ -143,6 +203,7 @@ export async function updateCurriculum(
   const updated = await prisma.curriculum.update({
     where: { id: input.id, tenantId },
     data: {
+      departmentId: input.departmentId || null,
       degreeLevel: input.degreeLevel,
       programCode: input.programCode,
       nameTh: input.nameTh,
@@ -154,6 +215,16 @@ export async function updateCurriculum(
       revisedYear: input.revisedYear,
       brochureUrl: input.brochureUrl || null,
       isActive: input.isActive,
+    },
+    include: {
+      department: {
+        select: {
+          id: true,
+          code: true,
+          nameTh: true,
+          nameEn: true,
+        },
+      },
     },
   });
   return updated as CurriculumDto;

@@ -4,6 +4,7 @@ import { createCurriculumSchema, updateCurriculumSchema } from "./validations";
 describe("curriculum validations", () => {
   it("validate createCurriculumSchema successfully with valid input", () => {
     const valid = {
+      departmentId: "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
       degreeLevel: "BACHELOR" as const,
       programCode: "CS-2569",
       nameTh: "หลักสูตรวิทยาศาสตรบัณฑิต สาขาวิชาวิทยาการคอมพิวเตอร์",
@@ -17,6 +18,7 @@ describe("curriculum validations", () => {
     };
     const result = createCurriculumSchema.parse(valid);
     expect(result.programCode).toBe("CS-2569");
+    expect(result.departmentId).toBe("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11");
     expect(result.totalCredits).toBe(132);
   });
 

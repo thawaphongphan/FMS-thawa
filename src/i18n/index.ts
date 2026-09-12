@@ -8,6 +8,7 @@ import { messages as curriculum } from "@/features/curriculum/messages";
 import { messages as schedule } from "@/features/schedule/messages";
 import { messages as alumni } from "@/features/alumni/messages";
 import { messages as studentStats } from "@/features/student-stats/messages";
+import { messages as department } from "@/features/department/messages";
 
 /** พจนานุกรม UI ทั้งระบบ — feature ใหม่เพิ่มบรรทัด import ที่นี่ · key ต้องไม่ซ้ำข้าม feature */
 export const UI_MESSAGES: Dictionary = {
@@ -20,4 +21,5 @@ export const UI_MESSAGES: Dictionary = {
   ...schedule,
   ...alumni,
   ...studentStats,
+  ...department,
 };

@@ -7,4 +7,5 @@ export {
   adminListCurricula,
   type CurriculumDto,
   type CurriculumCourseDto,
+  type CurriculumDepartmentSummary,
 } from "./_internal/services";
